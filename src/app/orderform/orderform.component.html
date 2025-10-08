@@ -1,0 +1,454 @@
+<form [formGroup]="orderForm" (ngSubmit)="onSubmit()" class="tooltip-container blindmatrix-v4-parameters-form cart angularbody" [ngClass]="{'blinds-parameters-form': isBlinds}">
+  <div class="blinds container">
+    <!-- Loading indicator -->
+    <div *ngIf="isLoading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p>Loading product data...</p>
+    </div>
+
+    <!-- Error message -->
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      {{ errorMessage }}
+    </div>
+
+
+
+    <div id="configurator-root" class="product_visualizer_wrapper">
+      
+      <div class="visualizer-container">
+        
+        <div class="visualizer-main">
+       
+          <div #stickyEl class="sticky-container" [class.scrolled]="isScrolled">
+       <div class="product-header">
+          <div class="productaname">
+            <a [routerLink]="[product_list_page_link]" target="_self">
+              <i class="fa-solid fa-angle-left"></i>
+              <span> Back to {{ ecomproductname }}</span>
+            </a>
+            <h1 class="product-title">
+              <span>{{ buildProductTitle(ecomproductname, fabricname, colorname) }}</span>
+            </h1>
+          </div>
+            <div class="price-box">
+              <label class="price-label">Estimated Price:</label>
+              <span class="price">{{ grossPrice }}</span>
+            </div>
+        </div>
+            <div class="product_preview"
+                 #visualizerContainer>
+              <div id="main-img" class="configuratorpreviewimage" style="height:480px; position: relative;">
+                <canvas #visualizerCanvas></canvas>
+                <div #zoomLens class="zoom-lens" [hidden]="!isZooming"></div>
+                <div class="visualizer-controls">
+                  <button type="button"  (click)="resetCamera()">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:none;" *ngIf="!hide_frame" class="slider-container">
+              <div class="blindmatrix-v4-slider">
+                <div *ngFor="let product_img of product_img_array">
+                  <button type="button" class="multiple-frame-list-button"
+                          [class.selected_frame]="isSelectedFrame(product_img)"
+                          (click)="onFrameChange(getFrameImageUrl(product_img))">
+                    <img [src]="getFrameImageUrl(product_img)" alt="" width="200" height="100" 
+                         [style.background-image]="'url(' + background_color_image_url + ')'">
+                  </button>
+                </div>
+              </div>
+              <div *ngIf="product_img_array.length > 3" class="prev">
+                <span class="glyphicon icon-left" aria-hidden="true">&#11164;</span>
+              </div>
+              <div *ngIf="product_img_array.length > 3" class="next">
+                <span class="glyphicon icon-right" aria-hidden="true">&#11166;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-wrapper">
+          <div class="product-from-price">
+            <div class="price-container">
+              <p [style.visibility]="visualizertagline ? 'visible' : 'hidden'">
+                {{ visualizertagline || 'Transform Your Windows With ' + productname }}
+              </p>
+            </div>
+          </div>
+
+          <div class="product-info">
+            <div class='blindmatrix-v4-error-messages-wrapper'></div>
+            <h3>Please enter your measurements</h3>
+            
+            <div class="blinds-measurement">
+              <!-- Form fields will be rendered here -->
+            </div>
+
+            <div *ngFor="let field of parameters_data; trackBy: trackByFieldId" [ngSwitch]="get_field_type_name(field.fieldtypeid)">
+              <div *ngIf="field.showfieldecomonjob == 1">
+                <!-- Unit Type -->
+             <div *ngSwitchCase="'unit_type'">
+              <div class="parameter-wrapper inline-toggle radio">
+                <span class="mat-label" id="example-toggle-group-label">
+                  {{ field.fieldname }}
+                </span>
+
+                <mat-button-toggle-group
+                  [formControlName]="'field_' + field.fieldid"
+                  aria-labelledby="example-toggle-group-label"
+                  appearance="standard">
+
+                  <mat-button-toggle 
+                    *ngFor="let option of option_data[field.fieldid] || field.optionsvalue"
+                    [value]="option.optionid"
+                    [id]="'unittype_'+option.optionid">
+                    {{ option.optionname }}
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+            </div>
+
+
+                <!-- Text Input -->
+                <div *ngSwitchCase="'text'">
+                  <div class="parameter-wrapper">
+                    <mat-form-field>
+                      <mat-label>{{field.fieldname}}</mat-label>
+                      <input matInput
+                             type="text"
+                             [formControlName]="'field_' + field.fieldid"
+                             [id]="'field_' + field.fieldid"
+                             [attr.aria-label]="field.fieldname"
+                             [required]="field.mandatory == 1">
+                      <mat-error *ngIf="orderForm.get('field_' + field.fieldid)?.hasError('required')">
+                        This field is required.
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+           <div *ngSwitchCase="'list'">
+                <div class="parameter-wrapper">
+                  <mat-form-field >
+                    <mat-label>{{ field.fieldname }}</mat-label>
+                    <mat-select
+                      [formControlName]="'field_' + field.fieldid"
+                      [id]="'field_' + field.fieldid"
+                      [multiple]="field.selection == 1"
+                      [attr.aria-label]="field.fieldname">
+                      <mat-option *ngIf="field.selection != 1" value="">Select Option</mat-option>
+                      <mat-option *ngFor="let option of option_data[field.fieldid] || field.optionsvalue"
+                                  [value]="option.optionid">
+                        
+                        <ng-container *ngIf="option.optionimage && option.optionimage.trim() !== ''">
+                          <img [src]="apiUrl + '/api/public' + option.optionimage"
+                              alt="{{ option.optionname }}"
+                              width="24"
+                              height="24"
+                              style="vertical-align: middle; margin-right: 8px; border-radius: 3px;">
+                        </ng-container>
+
+                        {{ option.optionname }}
+                      </mat-option>
+
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+              </div>
+               <div *ngSwitchCase="'materials'">
+                <div class="parameter-wrapper">
+                  <mat-form-field>
+                    <mat-label>{{ field.fieldname }}</mat-label>
+                    <mat-select
+                      [formControlName]="'field_' + field.fieldid"
+                      [id]="'field_' + field.fieldid"
+                      [multiple]="field.selection == 1"
+                      [attr.aria-label]="field.fieldname">
+                      <mat-option *ngIf="field.selection != 1" value="">Select Option</mat-option>
+                      <mat-option *ngFor="let option of option_data[field.fieldid]"
+                                  [value]="option.optionid">
+                        
+                        <ng-container *ngIf="option.optionimage && option.optionimage.trim() !== ''">
+                          <img [src]="apiUrl + '/api/public' + option.optionimage"
+                              alt="{{ option.optionname }}"
+                              width="24"
+                              height="24"
+                              style="vertical-align: middle; margin-right: 8px; border-radius: 3px;">
+                        </ng-container>
+
+                        {{ option.optionname }}
+                      </mat-option>
+
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+              </div>
+              
+
+                <!-- Number Input -->
+                <div *ngSwitchCase="'number'">
+                  <div class="parameter-wrapper">
+                    <mat-form-field>
+                      <mat-label>{{field.fieldname}}</mat-label>
+                      <input matInput
+                             type="number"
+                             [formControlName]="'field_' + field.fieldid"
+                             [id]="'field_' + field.fieldid"
+                             [attr.aria-label]="field.fieldname"
+                             [required]="field.mandatory == 1">
+                      <mat-error *ngIf="orderForm.get('field_' + field.fieldid)?.hasError('required')">
+                        This field is required.
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- Width with Fraction -->
+                <div *ngSwitchCase="'width_with_fraction'">
+                  <div class="parameter-wrapper fraction-wrapper"  [ngClass]="{'fraction-visible': showFractions}">
+                    <mat-form-field class="fraction-field">
+                      <mat-label>{{field.fieldname}}</mat-label>
+                      <input matInput
+                             type="number"
+                             [formControlName]="'field_' + field.fieldid"
+                             [id]="'field_' + field.fieldid"
+                             [min]="min_width" 
+                             [attr.max]="max_width > 0 ? max_width : null"
+                             [placeholder]="'Between ' + min_width + ' and ' + max_width"
+                             aria-label="Width">
+                        <mat-hint>Min: {{min_width}}, Max: {{max_width}}</mat-hint>
+                    </mat-form-field>
+                    <mat-form-field *ngIf="showFractions" class="fraction-select" >
+                      <mat-label>Fraction</mat-label>
+                      <mat-select formControlName="widthfraction"
+                                  id="widthfraction"
+                                  aria-label="Width fraction">
+                        <mat-option *ngFor="let fraction of inchfraction_array"
+                                    [value]="fraction.decimalvalue">{{fraction.name}}</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <div *ngSwitchCase="'drop_with_fraction'">
+                  <div class="parameter-wrapper fraction-wrapper" [ngClass]="{'fraction-visible': showFractions}">
+                    <mat-form-field class="fraction-field">
+                      <mat-label>{{field.fieldname}}</mat-label>
+                      <input matInput
+                             type="number"
+                             [formControlName]="'field_' + field.fieldid"
+                             [id]="'field_' + field.fieldid"
+                             [min]="min_drop" 
+                             [attr.max]="max_drop > 0 ? max_drop : null"
+                             [placeholder]="'Between ' + min_drop + ' and ' + max_drop"
+                             aria-label="Drop">
+                        <mat-hint>Min: {{min_drop}}, Max: {{max_drop}}</mat-hint>
+                    </mat-form-field>
+                    <mat-form-field *ngIf="showFractions" class="fraction-select">
+                      <mat-label>Fraction</mat-label>
+                      <mat-select formControlName="dropfraction"
+                                  id="dropfraction"
+                                  aria-label="Drop fraction">
+                        <mat-option *ngFor="let fraction of inchfraction_array"
+                                    [value]="fraction.decimalvalue">{{fraction.name}}</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
+                 <div *ngSwitchCase="'qty'" style="display: none;">
+                  <div class="parameter-wrapper">
+                    <mat-form-field>
+                      <mat-label>{{field.fieldname}}</mat-label>
+                      <input matInput
+                             type="text"
+                             [formControlName]="'field_' + field.fieldid"
+                             [id]="'field_' + field.fieldid"
+                            >
+                    </mat-form-field>
+                  </div>
+                </div>
+                <div *ngSwitchCase="'supplier'">
+                    <div class="parameter-wrapper" style="display: none;">
+                    <mat-form-field>
+                      <mat-label>{{ field.fieldname }}</mat-label>
+                      <mat-select
+                        [formControlName]="'field_' + field.fieldid"
+                        [id]="'field_' + field.fieldid">
+                        <mat-option  value="">Select Option</mat-option>
+                        <mat-option *ngFor="let option of field.optionsvalue"
+                                    [value]="option.optionid">
+                          {{ option.optionname }}
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
+                <div *ngSwitchCase="'pricegroup'" style="display: none;">
+                    <div class="parameter-wrapper">
+                    <mat-form-field>
+                      <mat-label>{{ field.fieldname }}</mat-label>
+                      <mat-select
+                        [formControlName]="'field_' + field.fieldid"
+                        [id]="'field_' + field.fieldid">
+                        <mat-option  value="">Select Option</mat-option>
+                        <mat-option *ngFor="let option of field.optionsvalue"
+                                    [value]="option.optionid">
+                          {{ option.optionname }}
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
+                <div *ngSwitchCase="'hidden'">
+                  <input type="hidden" 
+                         [formControlName]="'field_' + field.fieldid" 
+                         [id]="'field_' + field.fieldid">
+                </div>
+              </div>
+            </div>
+
+            <div class="price_wrapper" *ngIf="grossPrice">
+              <div class="price_text">Your Price</div>
+              <div class="showprice_wrapper">
+                <span class="price">{{ grossPrice }}</span>
+              </div>
+            </div>
+
+            <div class="variations_button">
+              <div class="quantity">
+                <button type="button" class="minus" (click)="decrementQty()">-</button>
+                <input type="number" 
+                       formControlName="qty" 
+                       title="Qty" 
+                       size="4" 
+                       inputmode="numeric"
+                       min="1"
+                       aria-label="Quantity">
+                <button type="button" class="plus" (click)="incrementQty()">+</button>
+              </div>
+              <button type="submit" 
+                      name="submit-btn" 
+                      value="Submit" 
+                      class="add_to_cart_button">
+                <i class="fa-solid fa-cart-shopping"></i> 
+                {{ isSubmitting ? 'Adding...' : 'Add to cart' }}
+              </button>
+            </div>
+
+            <p [style.visibility]="delivery_duration ? 'visible' : 'hidden'" class="paramlable">
+              <span><i class="fas fa-shipping-fast"></i></span> 
+              Delivered in<strong>&nbsp;&nbsp;{{ delivery_duration || '5-6 working days' }}</strong>
+            </p>
+
+              <mat-accordion>
+                <mat-expansion-panel>
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>
+                      Show Order Details
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+                  <div id="allparametervalue">
+                    <table class="show-order-details-contents">
+                      <tbody>
+                        <tr *ngFor="let item of accordionData">
+                          <td><strong>{{ item.label }}:</strong></td>
+                          <td>{{ item.value }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </mat-expansion-panel>
+              </mat-accordion>
+           
+
+            <div class="order-sample-container">
+              <div *ngIf="ecomFreeSample === '1'" class="order-sample">
+                <span class="ordersampleimg">
+                  <img id="myimage" 
+                       [src]="background_color_image_url" 
+                       width="80" 
+                       alt="" 
+                       [style.-webkit-mask-image]="'url(' + sample_img_frame_url + ')'" 
+                       [style.mask-image]="'url(' + sample_img_frame_url + ')'">
+                </span>
+                <button type="button" 
+                        (click)="freesample($event.target)" 
+                        class="add_to_cart_button"
+                        [attr.data-color_id]="colorid" 
+                        [attr.data-fabric_id]="fabricid" 
+                        [attr.data-price_group_id]="pricegroup_id" 
+                        [attr.data-fabricname]="fabricname" 
+                        [attr.data-fabric_image_url]="background_color_image_url" 
+                        [attr.data-free_sample_data]="getFreeSampleData()">
+                  <span>Order Free Sample{{ ecomsampleprice >= 1 ? ' - ' + (ecomsampleprice | currency:'GBP') : '' }}</span>
+                </button>
+              </div>
+              <table>
+                <tr class="guides-page-contianer">
+                  <td colspan="3">
+                    <a target="_blank" href="/measuring-guide/">Measuring Guide</a>
+                    <a target="_blank" href="/fitting-guide/">Fitting Guide</a>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="related_products_list_data.length >= 3" class="related_products">
+      <h5>Related Products</h5>
+    </div>
+    <div class="products related_product_slider">
+      <div *ngFor="let related_product of related_products_list_data" class="product">
+        <div class="col-inner">
+          <div class="product-small">
+            <div class="box-image">
+              <div class="image-fade_in_back">
+                <a [routerLink]="getRelatedProductLink(related_product)">
+                  <img *ngIf="!hide_frame" [src]="productlisting_frame_url" 
+                       class="product-frame" 
+                       [style.background-image]="'url(' + getRelatedProductImageUrl(related_product) + ')'">
+                  <img *ngIf="hide_frame" [src]="getRelatedProductImageUrl(related_product)" 
+                       class="product-frame">
+                </a>
+              </div>
+            </div>
+            <div class="product-details-container">
+              <div class="product-details">
+                <h6><a [routerLink]="getRelatedProductLink(related_product)">{{ getRelatedProductName(related_product) }}</a></h6> 
+              </div>
+              <div>
+                <a [routerLink]="getRelatedProductLink(related_product)" 
+                   [title]="getRelatedProductName(related_product)">
+                  <div class="product-image-container">
+                    <img [style.-webkit-mask-image]="'url(' + sample_img_frame_url + ')'" 
+                         [style.mask-image]="'url(' + sample_img_frame_url + ')'" 
+                         [alt]="getRelatedProductName(related_product)" 
+                         [src]="getRelatedProductImageUrl(related_product)" 
+                         width="75" height="75" class="swatch-img">
+                  </div>
+                </a>
+              </div>
+            </div>
+            <a [routerLink]="getRelatedProductLink(related_product)" class="button buynow">
+              <i class="fa-solid fa-cart-shopping"></i> <span class="ms-1 my-1"> Buy Now</span>
+            </a>
+            <a *ngIf="ecomFreeSample == '1'" class="sample_addtocart_container" 
+               href="javascript:;" 
+               [attr.data-color_id]="related_product.cd_id" 
+               [attr.data-fabric_id]="related_product.fd_id" 
+               [attr.data-price_group_id]="related_product.groupid" 
+               [attr.data-fabricname]="getRelatedProductName(related_product)" 
+               [attr.data-fabric_image_url]="getRelatedProductImageUrl(related_product)" 
+               [attr.data-free_sample_data]="getFreeSampleData(related_product)" 
+               (click)="freesample($event.target)">
+              <span>Free Sample{{ ecomsampleprice >= 1 ? ' - ' + (ecomsampleprice | currency:'GBP') : '' }}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
