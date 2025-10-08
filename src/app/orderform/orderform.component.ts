@@ -304,23 +304,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
     // initial minimal group; will be replaced in initializeFormControls
     this.orderForm = this.fb.group({
         unit: ['', Validators.required],
-        width: [
-          '',
-          [
-            Validators.required,
-            Validators.min(this.min_width),
-            ...(this.max_width > 0 ? [Validators.max(this.max_width)] : [])
-          ]
-        ],
         widthfraction: [''],
-        drop: [
-          '',
-          [
-            Validators.required,
-            Validators.min(this.min_drop),
-            ...(this.max_drop > 0 ? [Validators.max(this.max_drop)] : [])
-          ]
-        ],
         dropfraction: [''],
         qty: [1, [Validators.required, Validators.min(1)]]
       });
@@ -579,17 +563,7 @@ private fetchInitialData(params: any): void {
    
     const formControls: Record<string, any> = {
       unit: ['mm', Validators.required],
-       width: ['', [
-        Validators.required,
-        Validators.min(this.min_width),
-        ...(this.max_width > 0 ? [Validators.max(this.max_width)] : [])
-      ]],
       widthfraction: [''],
-       drop: ['', [
-        Validators.required,
-        Validators.min(this.min_drop),
-        ...(this.max_drop > 0 ? [Validators.max(this.max_drop)] : [])
-      ]],
       dropfraction: [''],
       qty: [1, [Validators.required, Validators.min(1)]]
     };
@@ -883,20 +857,29 @@ private fetchInitialData(params: any): void {
           this.min_drop = minmaxdata.data.dropminmax.min;
           this.max_width = minmaxdata.data.widthminmax.max;
           this.max_drop = minmaxdata.data.dropminmax.max;
+          if (this.widthField) {
+            const widthControl = this.orderForm.get(`field_${this.widthField.fieldid}`);
+            if (widthControl) {
+              widthControl.setValidators([
+                Validators.required,
+                Validators.min(this.min_width),
+                ...(this.max_width > 0 ? [Validators.max(this.max_width)] : [])
+              ]);
+              widthControl.updateValueAndValidity();
+            }
+          }
 
-          this.orderForm.controls['width'].setValidators([
-            Validators.required,
-            Validators.min(this.min_width),
-            ...(this.max_width > 0 ? [Validators.max(this.max_width)] : [])
-          ]);
-          this.orderForm.controls['width'].updateValueAndValidity();
-
-          this.orderForm.controls['drop'].setValidators([
-            Validators.required,
-            Validators.min(this.min_drop),
-            ...(this.max_drop > 0 ? [Validators.max(this.max_drop)] : [])
-          ]);
-          this.orderForm.controls['drop'].updateValueAndValidity();
+          if (this.dropField) {
+            const dropControl = this.orderForm.get(`field_${this.dropField.fieldid}`);
+            if (dropControl) {
+              dropControl.setValidators([
+                Validators.required,
+                Validators.min(this.min_drop),
+                ...(this.max_drop > 0 ? [Validators.max(this.max_drop)] : [])
+              ]);
+              dropControl.updateValueAndValidity();
+            }
+          }
         }
       });
   }
@@ -1550,6 +1533,10 @@ private cleanSubchild(fields: any[]): any[] {
     }));
 }
 onSubmit(): void {
+    if (this.orderForm.invalid) {
+      this.markFormGroupTouched(this.orderForm);
+      return;
+    }
     this.jsondata = this.parameters_data.map(t=>{
         const i={
             id:+t.fieldid,
