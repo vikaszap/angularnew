@@ -203,6 +203,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   priceGroupOption: any;
   unitOption: any;
   isScrolled = false;
+  inchfractionselected:Number = 0;
   inchfraction_array: FractionOption[] = [
   {
     "name": "1/32",
@@ -835,6 +836,7 @@ private fetchInitialData(params: any): void {
         if(field.fieldtypeid === 5 && field.level == 1){
           this.fabricid  = value;
           this.fabricname = selectedOption.optionname;
+          this.updateFieldValues(field, selectedOption,'updatefabric');
         }
        if ((field.fieldtypeid === 5 && field.level == 2) || field.fieldtypeid === 20) {
           this.colorid = value;
@@ -1350,20 +1352,19 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
     if ([7, 11, 31,34].includes(targetField.fieldtypeid)) {
       if (this.showFractions) {
         fractionValue = Number(this.orderForm.get('widthfraction')?.value) || 0;
-        console.log(fractionValue);
         const selectedInchesOption = this.inchfraction_array.find(
           (opt) => String(opt.decimalvalue) === String(fractionValue)
         );
         if (selectedInchesOption) {
-          this.widthField.widthfraction = `${this.unittype}_${selectedUnitOption.optionname}_${fractionValue}_${selectedInchesOption?.id || 0}`;
+          this.widthField.widthfraction = `${selectedInchesOption?.id || 0}_${selectedUnitOption.optionname}_${this.inchfractionselected}_${fractionValue}`;
           this.widthField.widthfractiontext = selectedInchesOption.name;
         }else{
-          this.widthField.widthfraction = `0_${selectedUnitOption.optionname}_${this.unittype}_0`;
+          this.widthField.widthfraction = `0_${selectedUnitOption.optionname}_${this.inchfractionselected}_0`;
         }
        
       } else {
         if (selectedUnitOption) {
-          this.widthField.widthfraction = `0_${selectedUnitOption.optionname}_${this.unittype}_0`;
+          this.widthField.widthfraction = `0_${selectedUnitOption.optionname}_${this.inchfractionselected}_0`;
         }
       }
     }
@@ -1371,19 +1372,18 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
     if ([9, 12, 32,34].includes(targetField.fieldtypeid)) {
       if (this.showFractions) {
         fractionValue = Number(this.orderForm.get('dropfraction')?.value) || 0;
-        console.log(fractionValue);
         const selectedInchesOption = this.inchfraction_array.find(
           (opt) => String(opt.decimalvalue) === String(fractionValue)
         );
         if (selectedInchesOption) {
-          this.dropField.dropfraction = `${this.unittype}_${selectedUnitOption.optionname}_${fractionValue}_${selectedInchesOption.id}`;
+          this.dropField.dropfraction = `${selectedInchesOption?.id || 0}_${selectedUnitOption.optionname}_${this.inchfractionselected}_${fractionValue}`;
           this.dropField.dropfractiontext = selectedInchesOption.name;
         } else {
-          this.dropField.dropfraction = `0_${selectedUnitOption?.optionname || 'unit'}_${this.unittype}_0`;
+          this.dropField.dropfraction = `0_${selectedUnitOption?.optionname || 'unit'}_${this.inchfractionselected}_0`;
         }
       } else {
         if (selectedUnitOption) {
-          this.dropField.dropfraction = `0_${selectedUnitOption.optionname}_${this.unittype}_0`;
+          this.dropField.dropfraction = `0_${selectedUnitOption.optionname}_${this.inchfractionselected}_0`;
         }
       }
     }
@@ -1394,7 +1394,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
    * Called on valueChanges; detects changed field_x controls and triggers handlers.
    */
   onFormChanges(values: any, params: any): void {
-    console.log('checllelllsc');
+    
     if (!this.previousFormValue) {
       this.previousFormValue = { ...values };
       return;
@@ -1524,6 +1524,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
         return of(null);
       })
     ).subscribe((FractionData: any) => {
+      this.inchfractionselected = FractionData?.result?.inchfractionselected || 0;
       if (FractionData?.result?.inchfraction) {
         this.inchfraction_array = FractionData.result.inchfraction.map((item: any) => ({
           name: item.name,
