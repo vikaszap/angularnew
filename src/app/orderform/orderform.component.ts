@@ -1342,7 +1342,9 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
     else {
       targetField.value = String(selectedOption) ?? '';
     }
-  }
+  };
+  
+  console.log(targetField.fieldtypeid);
     let fractionValue: any;
     if([ 7,11,31].includes(targetField.fieldtypeid) && this.showFractions  ){
       fractionValue = Number(this.orderForm.get('widthfraction')?.value) || 0;
@@ -1351,7 +1353,9 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
                                     );
       const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
       targetField.widthfraction = this.unittype+"_"+selectedUnitOption.optionname+"_"+fractionValue+"_"+selectedInchesOption?.id;
-    
+      if (selectedInchesOption) {
+        targetField.widthfractiontext = selectedInchesOption.name;
+      }
     }else if([ 7,11,31].includes(targetField.fieldtypeid) && !this.showFractions){
       
        const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
@@ -1367,6 +1371,10 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
                                           (opt) => String(opt.decimalvalue) === String(fractionValue)
                                         );
       targetField.dropfraction = this.unittype+"_"+selectedUnitOption.optionname+"_"+fractionValue+"_"+selectedInchesOption?.id;
+      console.log(this.unittype+"_"+selectedUnitOption.optionname+"_"+fractionValue+"_"+selectedInchesOption?.id);
+      if (selectedInchesOption) {
+        targetField.dropfractiontext = selectedInchesOption.name;
+      }
     }else if( [9,12,32].includes(targetField.fieldtypeid) && !this.showFractions) {
        const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
       
@@ -1388,14 +1396,14 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
       let fractionValue = Number(values['widthfraction']) || 0;
       const totalWidth = mainWidth + fractionValue;
       this.width = totalWidth;
-      this.updateFieldValues(this.widthField, totalWidth, 'Totalwidth');
+      //this.updateFieldValues(this.widthField, totalWidth, 'Totalwidth');
     }
     if (values['dropfraction'] !== this.previousFormValue['dropfraction'] && this.dropField) {
       let mainDrop = Number(this.orderForm.get('field_' + this.dropField.fieldid)?.value) || 0;
       let fractionValue = Number(values['dropfraction']) || 0;
       const totalDrop = mainDrop + fractionValue;
       this.drop = totalDrop;
-      this.updateFieldValues(this.dropField, totalDrop, 'TotalDrop');
+      //this.updateFieldValues(this.dropField, totalDrop, 'TotalDrop');
     }
     for (const key in values) {
       if (!key.startsWith('field_')) continue;
@@ -1573,6 +1581,7 @@ onSubmit(): void {
         };
         return i.subchild=this.cleanSubchild(i.subchild),i
     });
+    console.log(this.jsondata);
     if (!this.routeParams || !this.routeParams.site || !this.routeParams.cart_productid) {
       this.errorMessage = 'Missing required route parameters for cart submission.';
       this.isSubmitting = false;
