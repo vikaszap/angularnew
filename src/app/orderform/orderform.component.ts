@@ -863,7 +863,7 @@ private fetchInitialData(params: any): void {
               widthControl.setValidators([
                 Validators.required,
                 Validators.min(this.min_width),
-                ...(this.max_width > 0 ? [Validators.max(this.max_width)] : [])
+                ...(this.max_width != null ? [Validators.max(this.max_width)] : [])
               ]);
               widthControl.updateValueAndValidity();
             }
@@ -875,7 +875,7 @@ private fetchInitialData(params: any): void {
               dropControl.setValidators([
                 Validators.required,
                 Validators.min(this.min_drop),
-                ...(this.max_drop > 0 ? [Validators.max(this.max_drop)] : [])
+                ...(this.max_drop != null ? [Validators.max(this.max_drop)] : [])
               ]);
               dropControl.updateValueAndValidity();
             }
