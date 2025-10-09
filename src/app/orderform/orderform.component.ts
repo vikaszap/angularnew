@@ -1394,6 +1394,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
    * Called on valueChanges; detects changed field_x controls and triggers handlers.
    */
   onFormChanges(values: any, params: any): void {
+    console.log('checllelllsc');
     if (!this.previousFormValue) {
       this.previousFormValue = { ...values };
       return;
@@ -1403,14 +1404,14 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
       let fractionValue = Number(values['widthfraction']) || 0;
       const totalWidth = mainWidth + fractionValue;
       this.width = totalWidth;
-      //this.updateFieldValues(this.widthField, totalWidth, 'Totalwidth');
+      this.updateFieldValues(this.widthField, mainWidth, 'Totalwidth');
     }
     if (values['dropfraction'] !== this.previousFormValue['dropfraction'] && this.dropField) {
       let mainDrop = Number(this.orderForm.get('field_' + this.dropField.fieldid)?.value) || 0;
       let fractionValue = Number(values['dropfraction']) || 0;
       const totalDrop = mainDrop + fractionValue;
       this.drop = totalDrop;
-      //this.updateFieldValues(this.dropField, totalDrop, 'TotalDrop');
+      this.updateFieldValues(this.dropField, mainDrop, 'TotalDrop');
     }
     for (const key in values) {
       if (!key.startsWith('field_')) continue;
