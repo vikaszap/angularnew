@@ -1344,41 +1344,45 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
     }
   };
   
-  console.log(targetField.fieldtypeid);
     let fractionValue: any;
-    if([ 7,11,31].includes(targetField.fieldtypeid) && this.showFractions  ){
-      fractionValue = Number(this.orderForm.get('widthfraction')?.value) || 0;
-      const selectedInchesOption = this.inchfraction_array.find(
-                                      (opt) => String(opt.decimalvalue) === String(fractionValue)
-                                    );
-      const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
-      targetField.widthfraction = this.unittype+"_"+selectedUnitOption.optionname+"_"+fractionValue+"_"+selectedInchesOption?.id;
-      if (selectedInchesOption) {
-        targetField.widthfractiontext = selectedInchesOption.name;
+    const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
+
+    if ([7, 11, 31].includes(targetField.fieldtypeid)) {
+      if (this.showFractions) {
+        fractionValue = Number(this.orderForm.get('widthfraction')?.value) || 0;
+        const selectedInchesOption = this.inchfraction_array.find(
+          (opt) => String(opt.decimalvalue) === String(fractionValue)
+        );
+        if (selectedUnitOption) {
+          targetField.widthfraction = `${this.unittype}_${selectedUnitOption.optionname}_${fractionValue}_${selectedInchesOption?.id}`;
+        }
+        if (selectedInchesOption) {
+          targetField.widthfractiontext = selectedInchesOption.name;
+        }
+      } else {
+        if (selectedUnitOption) {
+          targetField.widthfraction = `0_${selectedUnitOption.optionname}_${this.unittype}_0`;
+        }
       }
-    }else if([ 7,11,31].includes(targetField.fieldtypeid) && !this.showFractions){
-      
-       const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
-      
-        targetField.widthfraction = 0+"_"+selectedUnitOption.optionname+"_"+this.unittype+"_"+0;
     }
-      
-    if( [9,12,32].includes(targetField.fieldtypeid)  && this.showFractions  ){
-      fractionValue = Number(this.orderForm.get('dropfraction')?.value) || 0;
-   
-      const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
-      const selectedInchesOption = this.inchfraction_array.find(
-                                          (opt) => String(opt.decimalvalue) === String(fractionValue)
-                                        );
-      targetField.dropfraction = this.unittype+"_"+selectedUnitOption.optionname+"_"+fractionValue+"_"+selectedInchesOption?.id;
-      console.log(this.unittype+"_"+selectedUnitOption.optionname+"_"+fractionValue+"_"+selectedInchesOption?.id);
-      if (selectedInchesOption) {
-        targetField.dropfractiontext = selectedInchesOption.name;
+
+    if ([9, 12, 32].includes(targetField.fieldtypeid)) {
+      if (this.showFractions) {
+        fractionValue = Number(this.orderForm.get('dropfraction')?.value) || 0;
+        const selectedInchesOption = this.inchfraction_array.find(
+          (opt) => String(opt.decimalvalue) === String(fractionValue)
+        );
+        if (selectedUnitOption) {
+          targetField.dropfraction = `${this.unittype}_${selectedUnitOption.optionname}_${fractionValue}_${selectedInchesOption?.id}`;
+        }
+        if (selectedInchesOption) {
+          targetField.dropfractiontext = selectedInchesOption.name;
+        }
+      } else {
+        if (selectedUnitOption) {
+          targetField.dropfraction = `0_${selectedUnitOption.optionname}_${this.unittype}_0`;
+        }
       }
-    }else if( [9,12,32].includes(targetField.fieldtypeid) && !this.showFractions) {
-       const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
-      
-        targetField.dropfraction = 0+"_"+selectedUnitOption.optionname+"_"+this.unittype+"_"+0;
     }
 
 }
@@ -1472,7 +1476,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
 
     const totalWidth = Number(value) + fractionValue;
     this.width = totalWidth;
-    this.updateFieldValues(field, totalWidth,'Totalwidth');
+    this.updateFieldValues(field, value,'Totalwidth');
   }
   private handleDropChange(params: any, field: ProductField, value: any): void {
     let fractionValue = 0;
@@ -1483,7 +1487,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
 
     const totalDrop = Number(value) + fractionValue;
     this.drop = totalDrop;
-    this.updateFieldValues(field, totalDrop,'TotalDrop');
+    this.updateFieldValues(field, value,'TotalDrop');
   }
   
   private handleRestOptionChange(params: any, field: ProductField, value: any): void {
