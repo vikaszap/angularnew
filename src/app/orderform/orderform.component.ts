@@ -287,7 +287,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   matmapid = 0;
   pricegroup_id = 0;
   supplier_id: number | null = null;
-
+  currencySymbol: string = '£';
   // Form controls
   orderForm: FormGroup;
   previousFormValue: any;
@@ -324,7 +324,10 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   
 ngOnInit(): void {
   const queryParams = this.route.snapshot.queryParams;
-
+  const inputEl = document.getElementById('currency_symbol') as HTMLInputElement;
+    if (inputEl) {
+      this.currencySymbol = inputEl.value;
+    }
   // Check if running on localhost
   const isLocalhost = window.location.hostname === 'localhost';
   const pathParams = this.route.snapshot.params;
@@ -392,17 +395,12 @@ ngOnInit(): void {
     if (res && res.fullpriceobject) {
       const { grossprice } = res.fullpriceobject;
       this.pricedata = res.fullpriceobject;
-      this.grossPrice = `£${Number(grossprice).toFixed(2)}`;
+      this.grossPrice = `${this.currencySymbol}${Number(grossprice).toFixed(2)}`;
       this.grossPricenum = Number(grossprice);
-      if(grossprice == 0){
-        this.isSubmitting = false;
-      }else{
-        this.isSubmitting = true;
-      }
     } else {
       this.grossPrice = null;
       this.pricedata = [];
-      this.isSubmitting = false;
+      this.grossPricenum = 0;
     }
     this.cd.markForCheck();
   });
@@ -1565,6 +1563,12 @@ private cleanSubchild(fields: any[]): any[] {
 onSubmit(): void {
     if (this.orderForm.invalid) {
       this.markFormGroupTouched(this.orderForm);
+      return;
+    }
+    if (this.grossPricenum <= 0) {
+      this.errorMessage = 'The price could not be calculated. Please review your selections.';
+      this.isSubmitting = false;
+      this.cd.markForCheck();
       return;
     }
     this.jsondata = this.parameters_data.map(t=>{
