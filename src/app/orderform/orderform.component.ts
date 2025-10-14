@@ -285,6 +285,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   fabricid = 0;
   colorid = 0;
   matmapid = 0;
+  rulescount = 0;
+  formulacount  = 0;
   pricegroup_id = 0;
   supplier_id: number | null = null;
   currencySymbol: string = '£';
@@ -457,7 +459,7 @@ private fetchInitialData(params: any): void {
         this.productname = data.label;
         this.productdescription = data.pi_productdescription;
         this.pei_prospec = data.pei_prospec;
-        
+
         let productBgImages: string[] = [];
         try {
           productBgImages = JSON.parse(data.pi_backgroundimage || '[]');
@@ -476,19 +478,16 @@ private fetchInitialData(params: any): void {
           productDefaultImage = {};
           ecomProductName = "";
         }
-        
+
         const defaultImageSettings = productDefaultImage?.defaultimage || {};
         const defaultFrameFilename = defaultImageSettings?.backgrounddefault || '';
 
         this.product_img_array = productBgImages.map(imgFilename => {
           const isDefault = defaultFrameFilename && imgFilename.includes(defaultFrameFilename);
-
-          // The imgFilename can be a full path with spaces, so we need to encode only the filename part.
           const pathParts = imgFilename.split('/');
           const filename = pathParts.pop() || '';
           const encodedFilename = encodeURIComponent(filename);
           const encodedImgPath = [...pathParts, encodedFilename].join('/');
-
           const imageUrl = this.img_file_path_url + encodedImgPath;
 
           if (isDefault) {
@@ -496,18 +495,14 @@ private fetchInitialData(params: any): void {
             this.mainframe = imageUrl;
           }
 
-          return {
-            image_url: imageUrl,
-            is_default: isDefault
-          };
+          return { image_url: imageUrl, is_default: isDefault };
         });
 
         if (!this.mainframe && this.product_img_array.length > 0) {
-          // If no default was found, set the first image as the main frame
           const firstImage = this.product_img_array[0];
           this.frame_default_url = firstImage.image_url;
           this.mainframe = firstImage.image_url;
-          firstImage.is_default = true; // Mark it as default in the array
+          firstImage.is_default = true;
         }
 
         this.setupVisualizer(ecomProductName);
@@ -525,41 +520,46 @@ private fetchInitialData(params: any): void {
         this.priceGroupField = this.parameters_data.find(f => f.fieldtypeid === 13);
         this.supplierField   = this.parameters_data.find(f => f.fieldtypeid === 17);
         this.qtyField        = this.parameters_data.find(f => f.fieldtypeid === 14);
-        this.widthField = this.parameters_data.find(f => [7, 11, 31].includes(f.fieldtypeid));
-        this.dropField  = this.parameters_data.find(f => [9, 12, 32].includes(f.fieldtypeid));
+        this.widthField      = this.parameters_data.find(f => [7, 11, 31].includes(f.fieldtypeid));
+        this.dropField       = this.parameters_data.find(f => [9, 12, 32].includes(f.fieldtypeid));
 
-        return forkJoin([
-          this.loadOptionData(params),
-          this.apiService.getminandmax(
+        return forkJoin({
+          optionData: this.loadOptionData(params),
+          minMaxData: this.apiService.getminandmax(
             this.routeParams,
             this.routeParams.color_id,
             this.unittype,
             this.routeParams.pricing_group
-          )
-        ]);
+          ),
+          recipeList: this.apiService.getRecipeList(params) 
+        });
       }
 
       this.errorMessage = 'Invalid product data received';
       return of(null);
     }),
-    tap((results) => {
+    tap((results: any) => {
       if (results) {
         this.parameters_data.forEach(field => {
           const control = this.orderForm.get(`field_${field.fieldid}`);
-          if (control) {
-            if (this.qtyField && field.fieldid === this.qtyField.fieldid) {
-              this.updateFieldValues(this.qtyField, 1, 'fetchInitialDataqty');
-              control.setValue(1, { emitEvent: false });
-            }
+          if (control && this.qtyField && field.fieldid === this.qtyField.fieldid) {
+            this.updateFieldValues(this.qtyField, 1, 'fetchInitialDataqty');
+            control.setValue(1, { emitEvent: false });
           }
         });
 
-        const [_, minmaxdata] = results;
-        if (minmaxdata?.data) {
-          this.min_width = minmaxdata.data.widthminmax.min;
-          this.min_drop  = minmaxdata.data.dropminmax.min;
-          this.max_width = minmaxdata.data.widthminmax.max;
-          this.max_drop  = minmaxdata.data.dropminmax.max;
+        if (results.minMaxData?.data) {
+          const minmaxdata = results.minMaxData.data;
+          this.min_width = minmaxdata.widthminmax.min;
+          this.min_drop  = minmaxdata.dropminmax.min;
+          this.max_width = minmaxdata.widthminmax.max;
+          this.max_drop  = minmaxdata.dropminmax.max;
+        }
+
+        if (results.recipeList?.[0]?.data?.[0]) {
+          const recipe = results.recipeList[0].data[0];
+          this.rulescount = recipe.rulescount;
+          this.formulacount = recipe.formulacount;
         }
       }
     }),
@@ -574,6 +574,7 @@ private fetchInitialData(params: any): void {
     })
   ).subscribe();
 }
+
 
 
 
@@ -1696,15 +1697,14 @@ private getPrice(): Observable<any> {
   return this.getVat().pipe(
     switchMap(vatResponse => {
       const vatPercentage = vatResponse?.data ?? '20.000';
-      
       const selectedTax = vatResponse?.taxlist?.find(
-        (tax: any) => tax.id === vatResponse.vatselected
+        (tax: any) => tax.id === vatResponse?.vatselected
       );
 
-      this.vatpercentage = vatResponse?.data ?? '20.000';
+      this.vatpercentage = vatPercentage;
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
-      return this.apiService.getPrice(
+      return this.apiService.calculateRules(
         this.routeParams,
         this.width,
         this.drop,
@@ -1717,6 +1717,23 @@ private getPrice(): Observable<any> {
         this.selected_option_data,
         this.fabricid,
         this.colorid
+      ).pipe(
+        switchMap(rulesResponse => {
+          return this.apiService.getPrice(
+            this.routeParams,
+            this.width,
+            this.drop,
+            this.unittype,
+            this.supplier_id,
+            this.widthField.fieldtypeid,
+            this.dropField.fieldtypeid,
+            this.pricegroup,
+            vatPercentage,
+            this.selected_option_data,
+            this.fabricid,
+            this.colorid
+          );
+        })
       );
     }),
     catchError(error => {
@@ -1725,7 +1742,8 @@ private getPrice(): Observable<any> {
     })
   );
 }
-  private markFormGroupTouched(formGroup: FormGroup) {
+
+private markFormGroupTouched(formGroup: FormGroup) {
     Object.values(formGroup.controls).forEach(control => {
       control.markAsTouched();
 
