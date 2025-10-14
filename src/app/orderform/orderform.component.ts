@@ -192,6 +192,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   private priceGroupField?: ProductField;
   private supplierField?: ProductField;
   private qtyField?: ProductField;
+  private unitField?: ProductField;
   // Form / UI state
   public productTitle: string = '';
   isLoading = false;
@@ -213,6 +214,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   productdescription:string = "";
   pei_prospec:string = "";
   isScrolled = false;
+  unittypename = "";
   inchfractionselected:Number = 0;
   inchfraction_array: FractionOption[] = [
   {
@@ -515,13 +517,14 @@ private fetchInitialData(params: any): void {
         this.parameters_data = response.data || [];
         this.apiUrl = params.api_url;
         this.routeParams = params;
-
+        console.log(data);
         this.initializeFormControls();
         this.priceGroupField = this.parameters_data.find(f => f.fieldtypeid === 13);
         this.supplierField   = this.parameters_data.find(f => f.fieldtypeid === 17);
         this.qtyField        = this.parameters_data.find(f => f.fieldtypeid === 14);
         this.widthField      = this.parameters_data.find(f => [7, 11, 31].includes(f.fieldtypeid));
         this.dropField       = this.parameters_data.find(f => [9, 12, 32].includes(f.fieldtypeid));
+        this.unitField       = this.parameters_data.find(f => f.fieldtypeid === 34);
 
         return forkJoin({
           optionData: this.loadOptionData(params),
@@ -531,7 +534,8 @@ private fetchInitialData(params: any): void {
             this.unittype,
             this.routeParams.pricing_group
           ),
-          recipeList: this.apiService.getRecipeList(params) 
+          recipeList: this.apiService.getRecipeList(params),
+          FractionList: this.apiService.getFractionList(params)
         });
       }
 
@@ -560,6 +564,23 @@ private fetchInitialData(params: any): void {
           const recipe = results.recipeList[0].data[0];
           this.rulescount = recipe.rulescount;
           this.formulacount = recipe.formulacount;
+        }
+       if (results.FractionList?.result) {
+          const fraction = results.FractionList.result;
+          this.unittypename = fraction.fractioname;
+          this.inchfractionselected = fraction.inchfractionselected;
+          this.unittype  = fraction.unitypeid;
+          if(fraction.inchfraction){
+            this.inchfraction_array = fraction.inchfraction;
+            this.showFractions = true;
+          }
+          if(this.unitField && this.unitField.optionsvalue){
+           const selectedunitOption = this.unitField.optionsvalue.find(opt => `${opt.optionid}` === `${this.unittype}`);
+           console.log(selectedunitOption);
+           console.log(this.unitField);
+            console.log('check');
+           this.updateFieldValues(this.unitField, selectedunitOption,'updateunittype');
+          }
         }
       }
     }),
@@ -1312,18 +1333,25 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
 }
   if (currentValue === null || currentValue === undefined || currentValue === '' || 
       (Array.isArray(currentValue) && currentValue.length === 0)) {
-    
-    targetField.value = '';
-    targetField.valueid = '';
-    targetField.optionid = '';
-    targetField.optionvalue = [];
-    targetField.optionquantity = '';
-    
+    if(field.fieldtypeid == 34){
+      targetField.labelname = targetField.fieldname ?? '';
+      targetField.valueid = selectedOption?.fieldoptionlinkid ? String(selectedOption.fieldoptionlinkid): '';
+      targetField.optionid = String(selectedOption.optionid);
+      targetField.value = String(selectedOption.optionid);
+      targetField.optionvalue = [selectedOption];
+      targetField.optionquantity = '1';
+    }else{
+      targetField.value = '';
+      targetField.valueid = '';
+      targetField.optionid = '';
+      targetField.optionvalue = [];
+      targetField.optionquantity = '';
+    }
     
   }else if (selectedOption !== null) {
     if (Array.isArray(selectedOption)) {
       if ([14, 34, 17, 13, 4].includes(field.fieldtypeid)) {
-        
+       
         const ids = selectedOption.map(opt => String(opt.optionid)).join(',');
         targetField.value = ids;
         targetField.optiondefault = ids;
@@ -1364,48 +1392,49 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
     }
   };
   
-    let fractionValue: any;
-    const selectedUnitOption = this.unitOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.unittype}`);
+   let fractionValue: any;
+    const selectedUnitOption = this.unitOption?.find(
+      (opt: { optionid: any }) => `${opt.optionid}` === `${this.unittype}`
+    );
 
-    if ([7, 11, 31,34].includes(targetField.fieldtypeid)) {
-      if (this.showFractions) {
-        fractionValue = Number(this.orderForm.get('widthfraction')?.value) || 0;
-        const selectedInchesOption = this.inchfraction_array.find(
-          (opt) => String(opt.decimalvalue) === String(fractionValue)
-        );
-        if (selectedInchesOption) {
-          this.widthField.widthfraction = `${selectedInchesOption?.id || 0}_${selectedUnitOption.optionname}_${this.inchfractionselected}_${fractionValue}`;
-          this.widthField.widthfractiontext = selectedInchesOption.name;
-        }else{
-          this.widthField.widthfraction = `0_${selectedUnitOption.optionname}_${this.inchfractionselected}_0`;
-        }
-       
+  const unitName =
+    (this.unitOption && selectedUnitOption?.optionname) || this.unittypename || 'unit';
+
+  if ([7, 11, 31, 34].includes(targetField.fieldtypeid)) {
+    if (this.showFractions) {
+      fractionValue = Number(this.orderForm.get('widthfraction')?.value) || 0;
+      const selectedInchesOption = this.inchfraction_array.find(
+        (opt) => String(opt.decimalvalue) === String(fractionValue)
+      );
+
+      if (selectedInchesOption) {
+        this.widthField.widthfraction = `${selectedInchesOption?.id || 0}_${unitName}_${this.inchfractionselected}_${fractionValue}`;
+        this.widthField.widthfractiontext = selectedInchesOption.name;
       } else {
-        if (selectedUnitOption) {
-          this.widthField.widthfraction = `0_${selectedUnitOption.optionname}_${this.inchfractionselected}_0`;
-        }
+        this.widthField.widthfraction = `0_${unitName}_${this.inchfractionselected}_0`;
       }
+    } else {
+      this.widthField.widthfraction = `0_${unitName}_${this.inchfractionselected}_0`;
     }
+  }
 
-    if ([9, 12, 32,34].includes(targetField.fieldtypeid)) {
-      if (this.showFractions) {
-        fractionValue = Number(this.orderForm.get('dropfraction')?.value) || 0;
-        const selectedInchesOption = this.inchfraction_array.find(
-          (opt) => String(opt.decimalvalue) === String(fractionValue)
-        );
-        if (selectedInchesOption) {
-          this.dropField.dropfraction = `${selectedInchesOption?.id || 0}_${selectedUnitOption.optionname}_${this.inchfractionselected}_${fractionValue}`;
-          this.dropField.dropfractiontext = selectedInchesOption.name;
-        } else {
-          this.dropField.dropfraction = `0_${selectedUnitOption?.optionname || 'unit'}_${this.inchfractionselected}_0`;
-        }
+  if ([9, 12, 32, 34].includes(targetField.fieldtypeid)) {
+    if (this.showFractions) {
+      fractionValue = Number(this.orderForm.get('dropfraction')?.value) || 0;
+      const selectedInchesOption = this.inchfraction_array.find(
+        (opt) => String(opt.decimalvalue) === String(fractionValue)
+      );
+
+      if (selectedInchesOption) {
+        this.dropField.dropfraction = `${selectedInchesOption?.id || 0}_${unitName}_${this.inchfractionselected}_${fractionValue}`;
+        this.dropField.dropfractiontext = selectedInchesOption.name;
       } else {
-        if (selectedUnitOption) {
-          this.dropField.dropfraction = `0_${selectedUnitOption.optionname}_${this.inchfractionselected}_0`;
-        }
+        this.dropField.dropfraction = `0_${unitName}_${this.inchfractionselected}_0`;
       }
+    } else {
+      this.dropField.dropfraction = `0_${unitName}_${this.inchfractionselected}_0`;
     }
-
+  }
 }
 
   /**
@@ -1704,40 +1733,46 @@ private getPrice(): Observable<any> {
       this.vatpercentage = vatPercentage;
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
-      return this.apiService.calculateRules(
-        this.routeParams,
-        this.width,
-        this.drop,
-        this.unittype,
-        this.supplier_id,
-        this.widthField.fieldtypeid,
-        this.dropField.fieldtypeid,
-        this.pricegroup,
-        vatPercentage,
-        this.selected_option_data,
-        this.fabricid,
-        this.colorid
-      ).pipe(
-        switchMap(rulesResponse => {
-          return this.apiService.getPrice(
-            this.routeParams,
-            this.width,
-            this.drop,
-            this.unittype,
-            this.supplier_id,
-            this.widthField.fieldtypeid,
-            this.dropField.fieldtypeid,
-            this.pricegroup,
-            vatPercentage,
-            this.selected_option_data,
-            this.fabricid,
-            this.colorid
-          );
-        })
-      );
+      const fetchPrice = (rulesResponse?: any) => {
+        return this.apiService.getPrice(
+          this.routeParams,
+          this.width,
+          this.drop,
+          this.unittype,
+          this.supplier_id,
+          this.widthField.fieldtypeid,
+          this.dropField.fieldtypeid,
+          this.pricegroup,
+          vatPercentage,
+          this.selected_option_data,
+          this.fabricid,
+          this.colorid,
+        );
+      };
+
+      if (this.rulescount > 0) {
+        return this.apiService.calculateRules(
+          this.routeParams,
+          this.width,
+          this.drop,
+          this.unittype,
+          this.supplier_id,
+          this.widthField.fieldtypeid,
+          this.dropField.fieldtypeid,
+          this.pricegroup,
+          vatPercentage,
+          this.selected_option_data,
+          this.fabricid,
+          this.colorid
+        ).pipe(
+          switchMap(rulesResponse => fetchPrice(rulesResponse))
+        );
+      } else {
+        return fetchPrice();
+      }
     }),
     catchError(error => {
-      console.error('Error getting VAT, falling back to default', error);
+      console.error('Error getting VAT or Price', error);
       return of({ price: 0, vat: '20.00' });
     })
   );

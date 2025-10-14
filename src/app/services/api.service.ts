@@ -108,7 +108,13 @@ export class ApiService {
     const passData = `products/recipe/list/${product_id}`;
     return this.callApi('GET', passData, payload, true, false, api_url, api_key, api_name);
   }
-  
+
+  getFractionList(params: ApiCommonParams): Observable<ApiResponse> {
+    const { api_url, api_key, api_name, product_id, ...payload } = params;
+    const passData = `appSetup/fractionlist/${product_id}`;
+    return this.callApi('GET', passData, payload, false, false, api_url, api_key, api_name);
+  }
+
   getProductParameters(params: ApiCommonParams): Observable<ApiResponse> {
     const { api_url, api_key, api_name, recipeid, ...payload } = params;
     if (!recipeid) {
