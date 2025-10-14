@@ -1729,7 +1729,42 @@ private getPrice(): Observable<any> {
       const selectedTax = vatResponse?.taxlist?.find(
         (tax: any) => tax.id === vatResponse?.vatselected
       );
-
+      const orderitemdata = this.parameters_data.map(t=>{
+        const i={
+            id:+t.fieldid,
+            labelname:t.fieldname,
+            value:t.value||null,
+            valueid:t.valueid||null,
+            type:t.fieldtypeid,
+            optionid:t.optionid||null,
+            optionvalue:t.optionvalue||[],
+            optionquantity:t.optionquantity||null,
+            issubfabric:t.issubfabric??0,
+            labelnamecode:t.labelnamecode,
+            fabricorcolor:t.fabricorcolor||0,
+            widthfraction:t.widthfraction||null,
+            widthfractiontext:t.widthfractiontext||null,
+            dropfraction:t.dropfraction||null,
+            dropfractiontext:t.dropfractiontext||null,
+            showfieldonjob:t.showfieldonjob,
+            subchild:t.subchild||[],
+            showFieldOnCustomerPortal:t.showFieldOnCustomerPortal,
+            globaledit:!1,
+            numberfraction:t.numberfraction||null,
+            numberfractiontext:t.numberfractiontext||null,
+            fieldlevel:t.fieldlevel,
+            mandatory:t.mandatory,
+            fieldInformation:t.fieldInformation||null,
+            ruleoverride:t.ruleoverride,
+            optiondefault:t.optiondefault||t.optionid||null,
+            optionsvalue:t.optionvalue||[],
+            editruleoverride:1===t.editruleoverride?1:0,
+            fieldtypeid:t.fieldtypeid,
+            fieldid:t.fieldid,
+            fieldname:t.fieldname
+        };
+        return i.subchild=this.cleanSubchild(i.subchild),i
+    });
       this.vatpercentage = vatPercentage;
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
@@ -1746,7 +1781,7 @@ private getPrice(): Observable<any> {
           vatPercentage,
           this.selected_option_data,
           this.fabricid,
-          this.colorid,
+          this.colorid
         );
       };
 
@@ -1763,7 +1798,7 @@ private getPrice(): Observable<any> {
           vatPercentage,
           this.selected_option_data,
           this.fabricid,
-          this.colorid
+          this.colorid,
         ).pipe(
           switchMap(rulesResponse => fetchPrice(rulesResponse))
         );

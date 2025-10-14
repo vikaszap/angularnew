@@ -189,7 +189,8 @@ export class ApiService {
   vatprice: any,
   optiondata: any,
   fabricid: any = "",
-  colorid: any = ""
+  colorid: any = "",
+  orderitemdata: any= ""
 ) {
   const { api_url, api_key, api_name, recipeid, product_id } = params;
 
@@ -198,7 +199,7 @@ export class ApiService {
     blindopeningwidth: [],
     recipeid: recipeid,
     productid: product_id,
-    orderitemdata: [],
+    orderitemdata: orderitemdata,
     supplierid: supplierid,
     mode: "pricetableprice",
     width: width,
