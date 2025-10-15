@@ -1302,16 +1302,15 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
   };
 
   resetDefaults();
-  if (targetField.fieldtypeid === 3 && selectedOption ) {
+  if ( selectedOption ) {
   const processOption = (opt: any) => {
-    if (opt.hasprice !== 1) {
-      return;
-    }
+   
     const transformedOption = {
       optionvalue: Number(opt.optionid),
-      fieldtypeid: 3,
-      optionqty: parseInt(opt.optionquantity) || 1,
-      fieldoptionlinkid: opt.fieldoptionlinkid
+      fieldtypeid: opt.fieldtypeid,
+      optionqty: opt.optionquantity || 1,
+      fieldoptionlinkid: opt.fieldoptionlinkid,
+      fieldid:opt.fieldid
     };
 
     const index = this.selected_option_data.findIndex(
@@ -1729,42 +1728,16 @@ private getPrice(): Observable<any> {
       const selectedTax = vatResponse?.taxlist?.find(
         (tax: any) => tax.id === vatResponse?.vatselected
       );
-      const orderitemdata = this.parameters_data.map(t=>{
-        const i={
-            id:+t.fieldid,
-            labelname:t.fieldname,
-            value:t.value||null,
-            valueid:t.valueid||null,
-            type:t.fieldtypeid,
-            optionid:t.optionid||null,
-            optionvalue:t.optionvalue||[],
-            optionquantity:t.optionquantity||null,
-            issubfabric:t.issubfabric??0,
-            labelnamecode:t.labelnamecode,
-            fabricorcolor:t.fabricorcolor||0,
-            widthfraction:t.widthfraction||null,
-            widthfractiontext:t.widthfractiontext||null,
-            dropfraction:t.dropfraction||null,
-            dropfractiontext:t.dropfractiontext||null,
-            showfieldonjob:t.showfieldonjob,
-            subchild:t.subchild||[],
-            showFieldOnCustomerPortal:t.showFieldOnCustomerPortal,
-            globaledit:!1,
-            numberfraction:t.numberfraction||null,
-            numberfractiontext:t.numberfractiontext||null,
-            fieldlevel:t.fieldlevel,
-            mandatory:t.mandatory,
-            fieldInformation:t.fieldInformation||null,
-            ruleoverride:t.ruleoverride,
-            optiondefault:t.optiondefault||t.optionid||null,
-            optionsvalue:t.optionvalue||[],
-            editruleoverride:1===t.editruleoverride?1:0,
-            fieldtypeid:t.fieldtypeid,
-            fieldid:t.fieldid,
-            fieldname:t.fieldname
-        };
-        return i.subchild=this.cleanSubchild(i.subchild),i
-    });
+      const orderitemdata = this.parameters_data.map(t => ({
+        id: +t.fieldid,
+        fieldid: t.fieldid,
+        fieldname: t.fieldname,
+        value: t.value || null,
+        optionid: t.optionid || null,
+        fieldtypeid: t.fieldtypeid,
+        valueid: t.valueid || null,
+        optionvalue: t.optionvalue || [],
+      }));
       this.vatpercentage = vatPercentage;
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
