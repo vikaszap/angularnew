@@ -1799,6 +1799,7 @@ private getPrice(): Observable<any> {
           this.selected_option_data,
           this.fabricid,
           this.colorid,
+          orderitemdata
         ).pipe(
           switchMap(rulesResponse => fetchPrice(rulesResponse))
         );
