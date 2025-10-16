@@ -265,16 +265,18 @@ export class ApiService {
     level: string = "",
     fabriccolor: string = "",
     fieldid: string = "",
-    pricegroup: any = ""
+    pricegroup: any = "",
+    colorid: any ="",
+    fabricid: any =""
   ): Observable<ApiResponse> {
     const { api_url, api_key, api_name, product_id,category } = params;
     const payload = {
       changedfieldtypeid: "",
-      colorid: "",
+      colorid: colorid,
       coloriddual: "",
       customertype: "4",
       drop: null,
-      fabricid: "",
+      fabricid: fabricid,
       fabriciddual: "",
       fieldtypeid: category,
       lineitemselectedvalues: [],
@@ -347,6 +349,8 @@ export class ApiService {
     optiondata:any,
     fabricid:any = "",
     colorid:any = "",
+    netpricecomesfrom:any = "",
+    costpricecomesfrom:any = ""
   
     ) {
     const { api_url, api_key, api_name, recipeid,product_id } = params;
@@ -376,8 +380,8 @@ export class ApiService {
         productionmaterialnetpricewithdiscount: 0,
         overridepricevalue: 0,
         getpricegroupprice: 0,
-        rulescostpricecomesfrom: "1",
-        rulesnetpricecomesfrom: "2",
+        rulescostpricecomesfrom: costpricecomesfrom,
+        rulesnetpricecomesfrom:netpricecomesfrom,
         fabricfieldtype: "",
         widthfieldtypeid: widthfieldtypeid,
         dropfieldtypeid: dropfieldtypeid,

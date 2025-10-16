@@ -98,6 +98,7 @@ interface ProductField {
   valueid?: string;
   optionid?: any;
   level?: number;
+  valuename?: string;
   hasprice?:boolean;
   parentFieldId?: number;
   masterparentfieldid?: number;
@@ -215,6 +216,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   pei_prospec:string = "";
   isScrolled = false;
   unittypename = "";
+  netpricecomesfrom ="";
+  costpricecomesfrom ="";
   inchfractionselected:Number = 0;
   inchfraction_array: FractionOption[] = [
   {
@@ -517,7 +520,8 @@ private fetchInitialData(params: any): void {
         this.parameters_data = response.data || [];
         this.apiUrl = params.api_url;
         this.routeParams = params;
-        console.log(data);
+        this.netpricecomesfrom = response.netpricecomesfrom;
+        this.costpricecomesfrom = response.costpricecomesfrom;
         this.initializeFormControls();
         this.priceGroupField = this.parameters_data.find(f => f.fieldtypeid === 13);
         this.supplierField   = this.parameters_data.find(f => f.fieldtypeid === 17);
@@ -633,9 +637,10 @@ private fetchInitialData(params: any): void {
    * Load top-level option data for fields that require it (3,5,20 etc.)
    */
   private loadOptionData(params: any): Observable<any> {
-    return this.apiService.filterbasedlist(params, '').pipe(
+    return this.apiService.filterbasedlist(params, '','','',this.pricegroup,this.colorid,this.fabricid).pipe(
       takeUntil(this.destroy$),
       switchMap((filterData: any) => {
+     
         // if no optionarray, return empty responses
         if (!filterData?.[0]?.data?.optionarray) return of([]);
 
@@ -853,9 +858,14 @@ private fetchInitialData(params: any): void {
              
               const selectedOption = this.priceGroupOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.pricegroup}`);
               this.updateFieldValues(this.priceGroupField, selectedOption,'pricegrouponColor');
+            }else{
+                if( this.priceGroupField.optionsvalue){
+                  const selectedOption =   this.priceGroupField.optionsvalue.find(opt => `${opt.optionid}` === `${this.pricegroup}`)
+                  this.updateFieldValues(this.priceGroupField, selectedOption,'pricegrouponColor');
+                }
             }
           }
-          this.apiService.filterbasedlist(params, '', String(field.fieldtypeid), String(field.fieldid),this.pricegroup)
+          this.apiService.filterbasedlist(params, '', String(field.fieldtypeid), String(field.fieldid),this.pricegroup,this.colorid,this.fabricid)
           .pipe(takeUntil(this.destroy$))
           .subscribe((filterData: any) => {
               this.supplier_id = filterData[0].data.selectsupplierid;
@@ -865,6 +875,11 @@ private fetchInitialData(params: any): void {
                   control.setValue(Number(this.supplier_id), { emitEvent: false });
                   const selectedOption = this.supplierOption.find((opt: { optionid: any; }) => `${opt.optionid}` === `${this.supplier_id}`);
                   this.updateFieldValues(this.supplierField, selectedOption,'suppieronColor');
+                }else{
+                  if( this.supplierField.optionsvalue){
+                    const selectedOption =   this.supplierField.optionsvalue.find(opt => `${opt.optionid}` === `${this.supplier_id}`)
+                    this.updateFieldValues(this.supplierField, selectedOption,'suppieronColor');
+                  }
                 }
               }
           });
@@ -1034,7 +1049,7 @@ private processSubfield(
    * Load options for a subfield using filterbasedlist + getOptionlist
    */
   private loadSubfieldOptions(params: any, subfield: ProductField): Observable<any> {
-    return this.apiService.filterbasedlist(params, '', String(subfield.fieldtypeid), String(subfield.fieldid)).pipe(
+    return this.apiService.filterbasedlist(params, '', String(subfield.fieldtypeid), String(subfield.fieldid),this.pricegroup,this.colorid,this.fabricid).pipe(
       takeUntil(this.destroy$),
       switchMap((filterData: any) => {
         if (!filterData?.[0]?.data?.optionarray) return of(null);
@@ -1307,10 +1322,10 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
    
     const transformedOption = {
       optionvalue: Number(opt.optionid),
-      fieldtypeid: opt.fieldtypeid,
-      optionqty: opt.optionquantity || 1,
+      fieldtypeid: field.fieldtypeid,
+      optionqty: field.optionquantity || 1,
       fieldoptionlinkid: opt.fieldoptionlinkid,
-      fieldid:opt.fieldid
+      fieldid:field.fieldid
     };
 
     const index = this.selected_option_data.findIndex(
@@ -1332,13 +1347,14 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
 }
   if (currentValue === null || currentValue === undefined || currentValue === '' || 
       (Array.isArray(currentValue) && currentValue.length === 0)) {
-    if(field.fieldtypeid == 34){
+    if(field.fieldtypeid == 34 || field.fieldtypeid == 17 || field.fieldtypeid == 13){
       targetField.labelname = targetField.fieldname ?? '';
       targetField.valueid = selectedOption?.fieldoptionlinkid ? String(selectedOption.fieldoptionlinkid): '';
       targetField.optionid = String(selectedOption.optionid);
       targetField.value = String(selectedOption.optionid);
       targetField.optionvalue = [selectedOption];
       targetField.optionquantity = '1';
+      targetField.valuename = String(selectedOption.optionname);
     }else{
       targetField.value = '';
       targetField.valueid = '';
@@ -1380,6 +1396,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
       targetField.optionid = String(selectedOption.optionid);
       if ([17, 13].includes(field.fieldtypeid)) {
         targetField.value = String(selectedOption.optionid);
+        targetField.valuename = String(selectedOption.optionname);
       }else{
         targetField.value = String(selectedOption.optionname);
       }
@@ -1728,16 +1745,43 @@ private getPrice(): Observable<any> {
       const selectedTax = vatResponse?.taxlist?.find(
         (tax: any) => tax.id === vatResponse?.vatselected
       );
-      const orderitemdata = this.parameters_data.map(t => ({
-        id: +t.fieldid,
-        fieldid: t.fieldid,
-        fieldname: t.fieldname,
-        value: t.value || null,
-        optionid: t.optionid || null,
-        fieldtypeid: t.fieldtypeid,
-        valueid: t.valueid || null,
-        optionvalue: t.optionvalue || [],
-      }));
+      const orderitemdata =  this.parameters_data.map(t=>{
+      const isSpecialType = [34, 17, 13].includes(+t.fieldtypeid);
+        const i={
+            id:+t.fieldid,
+            labelname:t.fieldname,
+            value: isSpecialType ? t.valuename || null : t.value || null,
+            valueid:t.valueid||null,
+            type:t.fieldtypeid,
+            optionid:t.optionid||null,
+            optionvalue:t.optionvalue||[],
+            optionquantity:t.optionquantity||null,
+            issubfabric:t.issubfabric??0,
+            labelnamecode:t.labelnamecode,
+            fabricorcolor:t.fabricorcolor||0,
+            widthfraction:t.widthfraction||null,
+            widthfractiontext:t.widthfractiontext||null,
+            dropfraction:t.dropfraction||null,
+            dropfractiontext:t.dropfractiontext||null,
+            showfieldonjob:t.showfieldonjob,
+            subchild:t.subchild||[],
+            showFieldOnCustomerPortal:t.showFieldOnCustomerPortal,
+            globaledit:!1,
+            numberfraction:t.numberfraction||null,
+            numberfractiontext:t.numberfractiontext||null,
+            fieldlevel:t.fieldlevel,
+            mandatory:t.mandatory,
+            fieldInformation:t.fieldInformation||null,
+            ruleoverride:t.ruleoverride,
+            optiondefault:t.optiondefault||t.optionid||null,
+            optionsvalue:t.optionvalue||[],
+            editruleoverride:1===t.editruleoverride?1:0,
+            fieldtypeid:t.fieldtypeid,
+            fieldid:t.fieldid,
+            fieldname:t.fieldname
+        };
+        return i.subchild=this.cleanSubchild(i.subchild),i
+    });
       this.vatpercentage = vatPercentage;
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
@@ -1754,7 +1798,9 @@ private getPrice(): Observable<any> {
           vatPercentage,
           this.selected_option_data,
           this.fabricid,
-          this.colorid
+          this.colorid,
+          this.netpricecomesfrom,
+          this.costpricecomesfrom
         );
       };
 
