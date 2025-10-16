@@ -1718,6 +1718,8 @@ private getPrice(): Observable<any> {
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
       const fetchPrice = (rulesResponse?: any) => {
+       
+
         return this.apiService.getPrice(
           this.routeParams,
           this.width,
@@ -1732,7 +1734,10 @@ private getPrice(): Observable<any> {
           this.fabricid,
           this.colorid,
           this.netpricecomesfrom,
-          this.costpricecomesfrom
+          this.costpricecomesfrom,
+          rulesResponse.productionmaterialcostprice,
+          rulesResponse.productionmaterialnetprice,
+          rulesResponse.productionmaterialnetpricewithdiscount
         );
       };
 
