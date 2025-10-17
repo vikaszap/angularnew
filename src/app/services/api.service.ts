@@ -190,7 +190,8 @@ export class ApiService {
   optiondata: any,
   fabricid: any = "",
   colorid: any = "",
-  orderitemdata: any= ""
+  orderitemdata: any= "",
+  mode: number = 0
 ) {
   const { api_url, api_key, api_name, recipeid, product_id } = params;
 
@@ -207,13 +208,13 @@ export class ApiService {
     pricegroup: [pricegroup],
     pricegroupdual: "",
     pricegroupmulticurtain: [],
-    customertype: 1,
+    customertype: 4,
     optiondata: optiondata,
     unittype: unittype,
     orderitemqty: 1,
     jobid: null,
     customerid: "",
-    rulemode: 1,
+    rulemode: mode,
     productionoveridedata: [],
     widthfieldtypeid: widthfieldtypeid,
     dropfieldtypeid: dropfieldtypeid,
