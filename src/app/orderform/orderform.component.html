@@ -180,9 +180,17 @@
                              [formControlName]="'field_' + field.fieldid"
                              [id]="'field_' + field.fieldid"
                              [attr.aria-label]="field.fieldname"
+                              [attr.min]="field.numeric_setcondition == 1 ? field.numeric_minvalue : null"
+                              [attr.max]="field.numeric_setcondition == 1 ? field.numeric_maxvalue : null"
                              [required]="field.mandatory == 1">
                       <mat-error *ngIf="orderForm.get('field_' + field.fieldid)?.hasError('required')">
                         This field is required.
+                      </mat-error>
+                      <mat-error *ngIf="orderForm.get('field_' + field.fieldid)?.hasError('min')">
+                        Value should be at least {{ field.numeric_minvalue }}.
+                      </mat-error>
+                      <mat-error *ngIf="orderForm.get('field_' + field.fieldid)?.hasError('max')">
+                        Value should not exceed {{ field.numeric_maxvalue }}.
                       </mat-error>
                     </mat-form-field>
                   </div>

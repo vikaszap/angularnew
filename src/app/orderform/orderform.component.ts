@@ -125,6 +125,9 @@ interface ProductField {
   fieldInformation?: any;
   editruleoverride?: any;
   ruleoverride?: any;
+  numeric_setcondition?: any;
+  numeric_minvalue?: any;
+  numeric_maxvalue?: any;
 }
 
 interface ProductOption {
