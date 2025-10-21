@@ -556,6 +556,11 @@ private fetchInitialData(params: any): void {
       if (results) {
         this.parameters_data.forEach(field => {
           const control = this.orderForm.get(`field_${field.fieldid}`);
+           if (control && field.ruleoverride === 0) {
+                control.disable();  
+              } else if(control) {
+                control.enable();  
+              }
           if (control && this.qtyField && field.fieldid === this.qtyField.fieldid) {
             this.updateFieldValues(this.qtyField, 1, 'fetchInitialDataqty');
             control.setValue(1, { emitEvent: false });
@@ -1460,8 +1465,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
    * Called on valueChanges; detects changed field_x controls and triggers handlers.
    */
   onFormChanges(values: any, params: any): void {
-    
-    this.isCalculatingPrice = false;
+      this.isCalculatingPrice = false;
     if (!this.previousFormValue) {
       this.previousFormValue = { ...values };
       return;
@@ -1717,8 +1721,7 @@ private getPrice(): Observable<any> {
       this.vatpercentage = vatPercentage;
       this.vatname = selectedTax ? selectedTax.name : vatResponse?.defaultsalestaxlabel;
 
-      const fetchPrice = (rulesResponse?: any) => {
-
+      const fetchPrice = (rulesResponse?: any, formulaResponse?: any) => {
         return this.apiService.getPrice(
           this.routeParams,
           this.width,
@@ -1734,13 +1737,13 @@ private getPrice(): Observable<any> {
           this.colorid,
           this.netpricecomesfrom,
           this.costpricecomesfrom,
-          rulesResponse.productionmaterialcostprice,
-          rulesResponse.productionmaterialnetprice,
-          rulesResponse.productionmaterialnetpricewithdiscount
+          formulaResponse?.productionmaterialcostprice,
+          formulaResponse?.productionmaterialnetprice,
+          formulaResponse?.productionmaterialnetpricewithdiscount
         );
       };
 
-      if (this.formulacount > 0) {
+      if (this.rulescount > 0) {
         return this.apiService.calculateRules(
           this.routeParams,
           this.width,
@@ -1755,10 +1758,45 @@ private getPrice(): Observable<any> {
           this.fabricid,
           this.colorid,
           this.rulesorderitem,
-          1  
+          0
         ).pipe(
-          switchMap(formulaResponse => {
-            if (this.rulescount > 0) {
+          switchMap(rulesResponse => {
+            const rulesresponse = rulesResponse as any;
+
+            if (rulesresponse?.ruleresults?.length) {
+              rulesresponse.ruleresults.forEach((ruleObj: any) => {
+                const fieldid = +Object.keys(ruleObj)[0];
+                const ruleArray = ruleObj[fieldid];
+
+                ruleArray.forEach((rule: any) => {
+                  const { optionid, optionvalue } = rule;
+
+                  const control = this.orderForm.get(`field_${fieldid}`);
+                  const field = this.parameters_data.find(f => f.fieldid === fieldid);
+
+                  if (!control || !field) return;
+
+                  if (optionid && optionvalue && this.option_data[field.fieldid]) {
+                    const numericOptionId = Number(optionid);
+                    const options = this.option_data[field.fieldid] || field.optionsvalue || [];
+                    const selectedOption = options.find(
+                      (opt: any) => Number(opt.optionid) === numericOptionId
+                    );
+
+                    if (selectedOption) {
+                      control.setValue(numericOptionId, { emitEvent: false });
+                      this.updateFieldValues(field, selectedOption, 'rules update select');
+                    }
+                  } else if (optionvalue && optionid !== 0) {
+                    control.setValue(optionid, { emitEvent: false });
+                    this.updateFieldValues(field, optionvalue, 'rules update text');
+                  }
+                  this.updateAccordionData();
+                });
+              });
+            }
+
+            if (this.formulacount > 0) {
               return this.apiService.calculateRules(
                 this.routeParams,
                 this.width,
@@ -1773,49 +1811,18 @@ private getPrice(): Observable<any> {
                 this.fabricid,
                 this.colorid,
                 this.rulesorderitem,
-                0  
+                1
               ).pipe(
-                switchMap(rulesResponse => {
-                   const rulesresponse = rulesResponse as any;
-
-                      if (rulesresponse?.ruleresults?.length) {
-                        rulesresponse.ruleresults.forEach((ruleObj: any) => {
-                          const fieldid = +Object.keys(ruleObj)[0];
-                          const ruleArray = ruleObj[fieldid];
-
-                          ruleArray.forEach((rule: any) => {
-                            const { optionid, optionvalue } = rule;
-
-                              if (!optionid || !optionvalue) {
-                                return;
-                              }
-                            const control = this.orderForm.get(`field_${fieldid}`);
-                                console.log(control);
-                            if (control) {
-                              control.setValue(optionid, { emitEvent: false });
-                              this.rulesorderitem = this.orderitemdata(true);
-                              /*const options = (control as any).optionsvalue || [];
-                              const selectedOption = options.find(
-                                (opt: any) => `${opt.optionid}` === `${optionid}`
-                              );
-                              const field = this.parameters_data.find(f => f.fieldid === fieldid);
-                              if (selectedOption && field) {
-                                this.updateFieldValues(field, selectedOption, 'rules update');
-                              }*/
-                            }
-                          });
-                        });
-                      }
-                  return fetchPrice(formulaResponse);
-                })
+                switchMap(formulaResponse => fetchPrice(rulesResponse, formulaResponse))
               );
-            } else {
-              return fetchPrice(formulaResponse);
             }
+
+            return fetchPrice(rulesResponse);
           })
         );
       }
-      else if (this.rulescount > 0) {
+
+      else if (this.formulacount > 0) {
         return this.apiService.calculateRules(
           this.routeParams,
           this.width,
@@ -1830,9 +1837,9 @@ private getPrice(): Observable<any> {
           this.fabricid,
           this.colorid,
           this.rulesorderitem,
-          0  
+          1
         ).pipe(
-          switchMap(rulesResponse => fetchPrice(rulesResponse))
+          switchMap(formulaResponse => fetchPrice(undefined, formulaResponse))
         );
       }
       else {
@@ -1845,6 +1852,7 @@ private getPrice(): Observable<any> {
     })
   );
 }
+
 
 private markFormGroupTouched(formGroup: FormGroup) {
     Object.values(formGroup.controls).forEach(control => {

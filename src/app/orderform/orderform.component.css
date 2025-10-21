@@ -750,3 +750,18 @@ button.mat-raised-button:hover {
 .guides-buttons a {
   text-decoration: none;
 }
+h1.product-title {
+    display: flex;
+}
+.productaname {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+input:disabled,
+mat-select:disabled,
+mat-button-toggle-group:disabled {
+    background: rgba(225, 225, 225, 0.5) !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+}
