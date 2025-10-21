@@ -18,6 +18,8 @@ import { switchMap, mergeMap, map, tap, catchError, takeUntil, finalize, toArray
 import {MatTabsModule} from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 
 
 
@@ -177,7 +179,8 @@ interface FractionOption {
     MatTabsModule,
     MatButtonModule,
     MatExpansionModule,
-    MatIconModule
+    MatIconModule,
+    MatTooltipModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
