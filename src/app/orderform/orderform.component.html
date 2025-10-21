@@ -94,10 +94,11 @@
 
               <div *ngSwitchCase="'text'">
                 <div class="parameter-wrapper">
-                  <mat-form-field
-                    [matTooltip]="field.fieldInformation || ''"
-                    matTooltipPosition="above">
-                    <mat-label>{{ field.fieldname }}</mat-label>
+                  <mat-form-field>
+                    <mat-label>
+                      {{ field.fieldname }}
+                      <app-info-icon [infoText]="field.fieldInformation"></app-info-icon>
+                    </mat-label>
                     <input
                       matInput
                       type="text"
@@ -114,10 +115,11 @@
 
               <div *ngSwitchCase="'list'">
                 <div class="parameter-wrapper">
-                  <mat-form-field
-                    [matTooltip]="field.fieldInformation || ''"
-                    matTooltipPosition="above">
-                    <mat-label>{{ field.fieldname }}</mat-label>
+                  <mat-form-field>
+                    <mat-label>
+                      {{ field.fieldname }}
+                      <app-info-icon [infoText]="field.fieldInformation"></app-info-icon>
+                    </mat-label>
                     <mat-select
                       [formControlName]="'field_' + field.fieldid"
                       [id]="'field_' + field.fieldid"
@@ -141,10 +143,11 @@
 
               <div *ngSwitchCase="'materials'">
                 <div class="parameter-wrapper">
-                  <mat-form-field
-                    [matTooltip]="field.fieldInformation || ''"
-                    matTooltipPosition="above">
-                    <mat-label>{{ field.fieldname }}</mat-label>
+                  <mat-form-field>
+                    <mat-label>
+                      {{ field.fieldname }}
+                      <app-info-icon [infoText]="field.fieldInformation"></app-info-icon>
+                    </mat-label>
                     <mat-select
                       [formControlName]="'field_' + field.fieldid"
                       [id]="'field_' + field.fieldid"
@@ -168,10 +171,11 @@
 
               <div *ngSwitchCase="'number'">
                 <div class="parameter-wrapper">
-                  <mat-form-field
-                    [matTooltip]="field.fieldInformation || ''"
-                    matTooltipPosition="above">
-                    <mat-label>{{ field.fieldname }}</mat-label>
+                  <mat-form-field>
+                    <mat-label>
+                      {{ field.fieldname }}
+                      <app-info-icon [infoText]="field.fieldInformation"></app-info-icon>
+                    </mat-label>
                     <input
                       matInput
                       type="number"
@@ -204,11 +208,11 @@
 
               <div *ngSwitchCase="'width_with_fraction'">
                 <div class="parameter-wrapper fraction-wrapper" [ngClass]="{'fraction-visible': showFractions}">
-                  <mat-form-field
-                    class="fraction-field"
-                    [matTooltip]="field.fieldInformation || ''"
-                    matTooltipPosition="above">
-                    <mat-label>{{ field.fieldname }}</mat-label>
+                  <mat-form-field class="fraction-field">
+                    <mat-label>
+                      {{ field.fieldname }}
+                      <app-info-icon [infoText]="field.fieldInformation"></app-info-icon>
+                    </mat-label>
                     <input
                       matInput
                       type="number"
@@ -235,11 +239,11 @@
 
               <div *ngSwitchCase="'drop_with_fraction'">
                 <div class="parameter-wrapper fraction-wrapper" [ngClass]="{'fraction-visible': showFractions}">
-                  <mat-form-field
-                    class="fraction-field"
-                    [matTooltip]="field.fieldInformation || ''"
-                    matTooltipPosition="above">
-                    <mat-label>{{ field.fieldname }}</mat-label>
+                  <mat-form-field class="fraction-field">
+                    <mat-label>
+                      {{ field.fieldname }}
+                      <app-info-icon [infoText]="field.fieldInformation"></app-info-icon>
+                    </mat-label>
                     <input
                       matInput
                       type="number"
