@@ -68,7 +68,7 @@
             <div class="blinds-measurement">
             </div>
 
-         <div *ngFor="let field of parameters_data; trackBy: trackByFieldId" [ngSwitch]="get_field_type_name(field.fieldtypeid)">
+       <div *ngFor="let field of parameters_data; trackBy: trackByFieldId" [ngSwitch]="get_field_type_name(field.fieldtypeid)">
   <div *ngIf="field.showfieldecomonjob == 1">
 
     <!-- Unit Type -->
@@ -76,13 +76,16 @@
       <div class="parameter-wrapper inline-toggle radio">
         <span class="mat-label" id="example-toggle-group-label">
           {{ field.fieldname }}
-          <mat-icon
-            *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-            [matTooltip]="field.fieldInformation"
-            class="info-icon"
-            [attr.aria-label]="'Information about ' + field.fieldname">
-            info_outline
-          </mat-icon>
+          <span class="icon-wrapper">
+            <mat-icon
+              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+              [matTooltip]="field.fieldInformation"
+              class="info-icon"
+              [matTooltipPosition]="'above'"
+              [attr.aria-label]="'Information about ' + field.fieldname">
+              info_outline
+            </mat-icon>
+          </span>
         </span>
 
         <mat-button-toggle-group
@@ -106,14 +109,17 @@
         <mat-form-field>
           <mat-label>
             {{ field.fieldname }}
-            <mat-icon
-              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
-              class="info-icon"
-              [attr.aria-label]="'Information about ' + field.fieldname">
-              info_outline
-            </mat-icon>
+            <span class="icon-wrapper">
+              <mat-icon *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''" 
+                        [matTooltip]="field.fieldInformation" 
+                        class="info-icon" 
+                        [matTooltipPosition]="'above'"
+                        [attr.aria-label]="'Information about ' + field.fieldname">
+                info_outline
+              </mat-icon>
+            </span>
           </mat-label>
+          
           <input matInput
                  type="text"
                  [formControlName]="'field_' + field.fieldid"
@@ -133,13 +139,16 @@
         <mat-form-field>
           <mat-label>
             {{ field.fieldname }}
-            <mat-icon
-              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
-              class="info-icon"
-              [attr.aria-label]="'Information about ' + field.fieldname">
-              info_outline
-            </mat-icon>
+            <span class="icon-wrapper">
+              <mat-icon
+                *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+                [matTooltip]="field.fieldInformation"
+                class="info-icon"
+                [matTooltipPosition]="'above'"
+                [attr.aria-label]="'Information about ' + field.fieldname">
+                info_outline
+              </mat-icon>
+            </span>
           </mat-label>
           <mat-select
             [formControlName]="'field_' + field.fieldid"
@@ -169,13 +178,16 @@
         <mat-form-field>
           <mat-label>
             {{ field.fieldname }}
-            <mat-icon
-              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
-              class="info-icon"
-              [attr.aria-label]="'Information about ' + field.fieldname">
-              info_outline
-            </mat-icon>
+            <span class="icon-wrapper">
+              <mat-icon
+                *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+                [matTooltip]="field.fieldInformation"
+                class="info-icon"
+                [matTooltipPosition]="'above'"
+                [attr.aria-label]="'Information about ' + field.fieldname">
+                info_outline
+              </mat-icon>
+            </span>
           </mat-label>
           <mat-select
             [formControlName]="'field_' + field.fieldid"
@@ -205,13 +217,16 @@
         <mat-form-field>
           <mat-label>
             {{ field.fieldname }}
-            <mat-icon
-              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
-              class="info-icon"
-              [attr.aria-label]="'Information about ' + field.fieldname">
-              info_outline
-            </mat-icon>
+            <span class="icon-wrapper">
+              <mat-icon
+                *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+                [matTooltip]="field.fieldInformation"
+                class="info-icon"
+                [matTooltipPosition]="'above'"
+                [attr.aria-label]="'Information about ' + field.fieldname">
+                info_outline
+              </mat-icon>
+            </span>
           </mat-label>
           <input matInput
                  type="number"
@@ -248,13 +263,16 @@
         <mat-form-field class="fraction-field">
           <mat-label>
             {{ field.fieldname }}
-            <mat-icon
-              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
-              class="info-icon"
-              [attr.aria-label]="'Information about ' + field.fieldname">
-              info_outline
-            </mat-icon>
+            <span class="icon-wrapper">
+              <mat-icon
+                *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+                [matTooltip]="field.fieldInformation"
+                class="info-icon"
+                [matTooltipPosition]="'above'"
+                [attr.aria-label]="'Information about ' + field.fieldname">
+                info_outline
+              </mat-icon>
+            </span>
           </mat-label>
           <input matInput
                  type="number"
@@ -284,13 +302,16 @@
         <mat-form-field class="fraction-field">
           <mat-label>
             {{ field.fieldname }}
-            <mat-icon
-              *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
-              class="info-icon"
-              [attr.aria-label]="'Information about ' + field.fieldname">
-              info_outline
-            </mat-icon>
+            <span class="icon-wrapper">
+              <mat-icon
+                *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+                [matTooltip]="field.fieldInformation"
+                class="info-icon"
+                [matTooltipPosition]="'above'"
+                [attr.aria-label]="'Information about ' + field.fieldname">
+                info_outline
+              </mat-icon>
+            </span>
           </mat-label>
           <input matInput
                  type="number"

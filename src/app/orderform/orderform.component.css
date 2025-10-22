@@ -778,3 +778,17 @@ mat-button-toggle-group:disabled {
   color: #00c2ff;
   transform: scale(1.1);
 }
+
+.icon-wrapper {
+  display: inline-block;
+  pointer-events: auto;
+  margin-left: 4px;
+}
+
+.icon-wrapper .info-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  vertical-align: middle;
+}
