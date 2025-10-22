@@ -766,3 +766,15 @@ mat-button-toggle-group:disabled {
     opacity: 0.7 !important;
 }
 
+.info-icon {
+  color: #757575;
+  font-size: 18px;
+  margin-left: 6px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
+}
+.info-icon:hover {
+  color: #00c2ff;
+  transform: scale(1.1);
+}
