@@ -792,3 +792,7 @@ mat-button-toggle-group:disabled {
   line-height: 18px;
   vertical-align: middle;
 }
+
+.icon-wrapper mat-icon {
+    margin-left: 0;
+}

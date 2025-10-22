@@ -79,9 +79,9 @@
           <span class="icon-wrapper">
             <mat-icon
               *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-              [matTooltip]="field.fieldInformation"
+              [appHtmlTooltip]="field.fieldInformation"
+              [hideDelay]="1000"
               class="info-icon"
-              [matTooltipPosition]="'above'"
               [attr.aria-label]="'Information about ' + field.fieldname">
               info_outline
             </mat-icon>
@@ -110,10 +110,10 @@
           <mat-label>
             {{ field.fieldname }}
             <span class="icon-wrapper">
-              <mat-icon *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''" 
-                        [matTooltip]="field.fieldInformation" 
-                        class="info-icon" 
-                        [matTooltipPosition]="'above'"
+              <mat-icon *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
+                        [appHtmlTooltip]="field.fieldInformation"
+                        [hideDelay]="1000"
+                        class="info-icon"
                         [attr.aria-label]="'Information about ' + field.fieldname">
                 info_outline
               </mat-icon>
@@ -142,9 +142,9 @@
             <span class="icon-wrapper">
               <mat-icon
                 *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-                [matTooltip]="field.fieldInformation"
+                [appHtmlTooltip]="field.fieldInformation"
+                [hideDelay]="1000"
                 class="info-icon"
-                [matTooltipPosition]="'above'"
                 [attr.aria-label]="'Information about ' + field.fieldname">
                 info_outline
               </mat-icon>
@@ -181,9 +181,9 @@
             <span class="icon-wrapper">
               <mat-icon
                 *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-                [matTooltip]="field.fieldInformation"
+                [appHtmlTooltip]="field.fieldInformation"
+                [hideDelay]="1000"
                 class="info-icon"
-                [matTooltipPosition]="'above'"
                 [attr.aria-label]="'Information about ' + field.fieldname">
                 info_outline
               </mat-icon>
@@ -220,9 +220,9 @@
             <span class="icon-wrapper">
               <mat-icon
                 *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-                [matTooltip]="field.fieldInformation"
+                [appHtmlTooltip]="field.fieldInformation"
+                [hideDelay]="1000"
                 class="info-icon"
-                [matTooltipPosition]="'above'"
                 [attr.aria-label]="'Information about ' + field.fieldname">
                 info_outline
               </mat-icon>
@@ -266,9 +266,9 @@
             <span class="icon-wrapper">
               <mat-icon
                 *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-                [matTooltip]="field.fieldInformation"
+                [appHtmlTooltip]="field.fieldInformation"
+                [hideDelay]="1000"
                 class="info-icon"
-                [matTooltipPosition]="'above'"
                 [attr.aria-label]="'Information about ' + field.fieldname">
                 info_outline
               </mat-icon>
@@ -305,9 +305,9 @@
             <span class="icon-wrapper">
               <mat-icon
                 *ngIf="field.fieldInformation && field.fieldInformation.trim() !== ''"
-                [matTooltip]="field.fieldInformation"
+                [appHtmlTooltip]="field.fieldInformation"
+                [hideDelay]="1000"
                 class="info-icon"
-                [matTooltipPosition]="'above'"
                 [attr.aria-label]="'Information about ' + field.fieldname">
                 info_outline
               </mat-icon>
