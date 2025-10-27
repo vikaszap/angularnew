@@ -622,8 +622,8 @@ private fetchInitialData(params: any): void {
    
     const formControls: Record<string, any> = {
       unit: ['mm', Validators.required],
-      widthfraction: [''],
-      dropfraction: [''],
+      widthfraction: [0],
+      dropfraction: [0],
       qty: [1, [Validators.required, Validators.min(1)]]
     };
 
@@ -689,6 +689,9 @@ private fetchInitialData(params: any): void {
               filter = filterresponseData.coloridsarray;
             } else if (field.fieldtypeid === 20) {
               matrial = 2;
+              filter = filterresponseData.coloridsarray;
+            }else if (field.fieldtypeid === 21) {
+              matrial = 0;
               filter = filterresponseData.coloridsarray;
             }
 
@@ -1091,13 +1094,10 @@ private processSubfield(
           if (subfield.fieldtypeid === 3) {
             matrial = 0;
             filter = filterresponseData.optionarray[subfield.fieldid];
-          } else if (subfield.fieldtypeid === 5) {
+          } else if (subfield.fieldtypeid === 5 || subfield.fieldtypeid === 20 || subfield.fieldtypeid === 21) {
             matrial = 2;
             filter = filterresponseData.coloridsarray;
-          } else if (subfield.fieldtypeid === 20) {
-            matrial = 2;
-            filter = filterresponseData.coloridsarray;
-          }
+          } 
 
           return this.apiService.getOptionlist(
             params,
@@ -1561,6 +1561,17 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
         item => !item.fieldoptionlinkid || !allLinkIdsToRemove.has(item.fieldoptionlinkid)
       );
     }
+  }
+  hasContent(htmlOrText: string | undefined): boolean {
+    if (!htmlOrText) return false; // empty or undefined
+
+    // Create a temporary div to parse HTML if present
+    const div = document.createElement('div');
+    div.innerHTML = htmlOrText;
+
+    // Get the text content (ignores HTML tags) and trim it
+    const text = div.textContent ?? '';
+    return text.trim().length > 0; // true only if there is real text
   }
   private handleWidthChange(params: any, field: ProductField, value: any): void {
     let fractionValue = 0;
