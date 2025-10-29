@@ -224,6 +224,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   isScrolled = false;
   unittypename = "";
   netpricecomesfrom ="";
+  is3DOn = false;
   costpricecomesfrom ="";
   inchfractionselected:Number = 0;
   inchfraction_array: FractionOption[] = [
@@ -266,16 +267,17 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ];
   color_arr: Record<string, any> = {};
-  min_width = 0;
-  max_width = 0;
-  min_drop = 0;
-  max_drop = 0;
+  min_width: number | null = null;
+  max_width: number | null = null;
+  min_drop: number | null = null;
+  max_drop: number | null = null; 
   width = 0;
   drop = 0;
   vatpercentage = 0;
   vatname = "";
   widthField: any = 0;
   dropField: any = 0;
+  fabricFieldType: any =0;
   ecomsampleprice = 0;
   ecomFreeSample = '0';
   delivery_duration = '';
@@ -437,20 +439,38 @@ ngOnInit(): void {
     // A better place for this might be after the first textures are loaded.
   }
 
-  private setupVisualizer(productname: string): void {
-    if (this.canvasRef && this.containerRef) {
-      this.threeService.initialize(this.canvasRef, this.containerRef.nativeElement);
-      if(productname.toLowerCase().includes("roller blinds")){
-        this.threeService.loadGltfModel('assets/rollerblinds.gltf','rollerblinds');
-      }else if(productname.toLowerCase().includes("venetian") || productname.toLowerCase().includes("fauxwood")){
-        this.threeService.loadGltfModel('assets/venetianblinds.gltf','venetian');
-      }else{
-        this.threeService.loadGltfModel('assets/rollerdoor.gltf','rollerdoor');
-      }
-      
-    }
-  }
+private setupVisualizer(productName: string): void {
+  if (!this.canvasRef || !this.containerRef) return;
 
+  const canvas = this.canvasRef;
+  const container = this.containerRef.nativeElement;
+  const lowerName = productName.toLowerCase();
+
+  // ✅ If 3D mode is ON
+  if (this.is3DOn) {
+    this.threeService.initialize(canvas, container);
+
+    // Load appropriate 3D model based on product name
+    if (lowerName.includes('roller blinds')) {
+      this.threeService.loadGltfModel('assets/rollerblinds.gltf', 'rollerblinds');
+    } else if (lowerName.includes('venetian') || lowerName.includes('fauxwood')) {
+      this.threeService.loadGltfModel('assets/venetianblinds.gltf', 'venetian');
+    } else {
+      this.threeService.loadGltfModel('assets/rollerdoor.gltf', 'rollerdoor');
+    }
+
+  } 
+  // ✅ Else: Initialize 2D mode
+  else if (this.mainframe && this.background_color_image_url) {
+    this.threeService.initialize2d(canvas, container);
+    this.threeService.createObjects(this.mainframe, this.background_color_image_url);
+  }
+}
+
+  toggle3D() {
+    this.is3DOn = !this.is3DOn;
+    this.setupVisualizer(this.productname);
+  }
   @HostListener('window:resize')
   onWindowResize(): void {
     if (this.containerRef) {
@@ -542,6 +562,7 @@ private fetchInitialData(params: any): void {
         this.widthField      = this.parameters_data.find(f => [7, 8, 11, 31].includes(f.fieldtypeid));
         this.dropField       = this.parameters_data.find(f => [9, 10, 12, 32].includes(f.fieldtypeid));
         this.unitField       = this.parameters_data.find(f => f.fieldtypeid === 34);
+        this.fabricFieldType = this.parameters_data.find(f => [20, 21, 5].includes(f.fieldtypeid));
 
         return forkJoin({
           optionData: this.loadOptionData(params),
@@ -574,13 +595,11 @@ private fetchInitialData(params: any): void {
           }
         });
 
-        if (results.minMaxData?.data) {
-          const minmaxdata = results.minMaxData.data;
-          this.min_width = minmaxdata.widthminmax.min;
-          this.min_drop  = minmaxdata.dropminmax.min;
-          this.max_width = minmaxdata.widthminmax.max;
-          this.max_drop  = minmaxdata.dropminmax.max;
-        }
+        const minmaxdata = results.minMaxData?.data;
+        this.min_width = minmaxdata?.widthminmax?.min ?? null;
+        this.min_drop  = minmaxdata?.dropminmax?.min ?? null;
+        this.max_width = minmaxdata?.widthminmax?.max ?? null;
+        this.max_drop  = minmaxdata?.dropminmax?.max ?? null;
 
         if (results.recipeList?.[0]?.data?.[0]) {
           const recipe = results.recipeList[0].data[0];
@@ -829,9 +848,11 @@ private fetchInitialData(params: any): void {
       if((field.fieldtypeid === 5 && field.level == 1) || (field.fieldtypeid === 21 && field.level == 1 )){
         this.fabricid  = 0;
         this.colorid = 0;
+        this.updateMinMaxValidators(false);
       }
       if ((field.fieldtypeid === 5 && field.level == 2) || field.fieldtypeid === 20 || (field.fieldtypeid === 21 && field.level == 2 )) {
         this.colorid = 0;
+        this.updateMinMaxValidators(false);
       }
       this.updateFieldValues(field, null, 'valueChangedToEmpty');
       this.clearExistingSubfields(field.fieldid, field.allparentFieldId);
@@ -867,12 +888,12 @@ private fetchInitialData(params: any): void {
       if (canUpdate && (field.fieldtypeid === 5 && field.level == 2 || field.fieldtypeid === 20) && selectedOption.optionimage) {
           this.background_color_image_url = this.apiUrl + '/api/public' + selectedOption.optionimage;
          
-          this.threeService.updateTextures(this.background_color_image_url);
+          //this.threeService.updateTextures(this.background_color_image_url);
       }
       
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Curtain Colour" ) && selectedOption.optionimage) {
             
-          this.threeService.updateTextures(this.apiUrl + '/api/public' + selectedOption.optionimage);
+          //this.threeService.updateTextures(this.apiUrl + '/api/public' + selectedOption.optionimage);
       }
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Frame Colour" ) && selectedOption.optionimage) {
             
@@ -923,13 +944,14 @@ private fetchInitialData(params: any): void {
         if((field.fieldtypeid === 5 && field.level == 1) || (field.fieldtypeid === 21 && field.level == 1) ){
           this.fabricid  = value;
           this.fabricname = selectedOption.optionname;
+          this.updateMinMaxValidators(false);
           this.updateFieldValues(field, selectedOption,'updatefabric');
         }
        if ((field.fieldtypeid === 5 && field.level == 2) || field.fieldtypeid === 20  || (field.fieldtypeid === 21 && field.level == 2)) {
           this.colorid = value;
           this.colorname = selectedOption.optionname;
           this.updateFieldValues(field, selectedOption,'updatecolor');
-          this.updateMinMaxValidators();
+          this.updateMinMaxValidators(true);
         }
 
         this.cd.markForCheck();
@@ -937,23 +959,35 @@ private fetchInitialData(params: any): void {
     }
   }
 
-    private updateMinMaxValidators(): void {
-    this.apiService.getminandmax(this.routeParams, String(this.colorid), this.unittype, Number(this.pricegroup))
+    private updateMinMaxValidators(color :boolean): void {
+    this.min_width = null;
+    this.max_width = null;
+    this.min_drop = null;
+    this.max_drop = null;
+    if(color){
+      var colorid =  String(this.colorid);
+    }else{
+      var colorid =  "";
+    }
+    this.apiService.getminandmax(this.routeParams, colorid, this.unittype, Number(this.pricegroup))
       .pipe(takeUntil(this.destroy$))
       .subscribe(minmaxdata => {
-        if (minmaxdata?.data) {
-          this.min_width = minmaxdata.data.widthminmax.min;
-          this.min_drop = minmaxdata.data.dropminmax.min;
-          this.max_width = minmaxdata.data.widthminmax.max;
-          this.max_drop = minmaxdata.data.dropminmax.max;
+             const data = minmaxdata?.data;
+            this.min_width = data?.widthminmax?.min ?? null;
+            this.min_drop = data?.dropminmax?.min ?? null;
+            this.max_width = data?.widthminmax?.max ?? null;
+            this.max_drop = data?.dropminmax?.max ?? null;
           if (this.widthField) {
             const widthControl = this.orderForm.get(`field_${this.widthField.fieldid}`);
             if (widthControl) {
-              widthControl.setValidators([
-                Validators.required,
-                Validators.min(this.min_width),
-                ...(this.max_width != null ? [Validators.max(this.max_width)] : [])
-              ]);
+              const widthValidators = [Validators.required];
+              if (this.min_width != null) {
+                widthValidators.push(Validators.min(this.min_width));
+              }
+              if (this.max_width != null) {
+                widthValidators.push(Validators.max(this.max_width));
+              }
+              widthControl.setValidators(widthValidators);
               widthControl.updateValueAndValidity();
             }
           }
@@ -961,15 +995,17 @@ private fetchInitialData(params: any): void {
           if (this.dropField) {
             const dropControl = this.orderForm.get(`field_${this.dropField.fieldid}`);
             if (dropControl) {
-              dropControl.setValidators([
-                Validators.required,
-                Validators.min(this.min_drop),
-                ...(this.max_drop != null ? [Validators.max(this.max_drop)] : [])
-              ]);
+              const dropValidators = [Validators.required];
+              if (this.min_drop != null) {
+                dropValidators.push(Validators.min(this.min_drop));
+              }
+              if (this.max_drop != null) {
+                dropValidators.push(Validators.max(this.max_drop));
+              }
+              dropControl.setValidators(dropValidators);
               dropControl.updateValueAndValidity();
             }
           }
-        }
       });
   }
   /**
@@ -1619,7 +1655,7 @@ private updateFieldValues(field: ProductField,selectedOption: any = [],fundebug:
     const unitValue = typeof value === 'string' ? parseInt(value, 10) : value;
     this.unittype =  unitValue;
     this.showFractions = (unitValue === 4);
-    this.updateMinMaxValidators();
+    this.updateMinMaxValidators(true);
     this.apiService.getFractionData(params, unitValue).pipe(
       takeUntil(this.destroy$),
       catchError(err => {
@@ -1772,7 +1808,8 @@ private getPrice(): Observable<any> {
           this.costpricecomesfrom,
           formulaResponse?.productionmaterialcostprice,
           formulaResponse?.productionmaterialnetprice,
-          formulaResponse?.productionmaterialnetpricewithdiscount
+          formulaResponse?.productionmaterialnetpricewithdiscount,
+          this.fabricFieldType.fieldtypeid
         );
       };
 
@@ -1791,7 +1828,8 @@ private getPrice(): Observable<any> {
           this.fabricid,
           this.colorid,
           this.rulesorderitem,
-          0
+          0,
+          this.fabricFieldType.fieldtypeid
         ).pipe(
           switchMap(rulesResponse => {
             const rulesresponse = rulesResponse as any;
