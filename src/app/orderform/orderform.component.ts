@@ -439,33 +439,30 @@ ngOnInit(): void {
     // A better place for this might be after the first textures are loaded.
   }
 
-private setupVisualizer(productName: string): void {
-  if (!this.canvasRef || !this.containerRef) return;
+  private setupVisualizer(productname: string): void {
+    if (!this.canvasRef || !this.containerRef) return;
 
-  const canvas = this.canvasRef;
-  const container = this.containerRef.nativeElement;
-  const lowerName = productName.toLowerCase();
+    if (this.is3DOn) {
+      this.threeService.initialize(this.canvasRef, this.containerRef.nativeElement);
 
-  // ✅ If 3D mode is ON
-  if (this.is3DOn) {
-    this.threeService.initialize(canvas, container);
+      if (productname.toLowerCase().includes('roller blinds')) {
+        this.threeService.loadGltfModel('assets/rollerblinds.gltf', 'rollerblinds');
+      } else if (
+        productname.toLowerCase().includes('venetian') ||
+        productname.toLowerCase().includes('fauxwood')
+      ) {
+        this.threeService.loadGltfModel('assets/venetianblinds.gltf', 'venetian');
+      } else {
+        this.threeService.loadGltfModel('assets/rollerdoor.gltf', 'rollerdoor');
+      }
 
-    // Load appropriate 3D model based on product name
-    if (lowerName.includes('roller blinds')) {
-      this.threeService.loadGltfModel('assets/rollerblinds.gltf', 'rollerblinds');
-    } else if (lowerName.includes('venetian') || lowerName.includes('fauxwood')) {
-      this.threeService.loadGltfModel('assets/venetianblinds.gltf', 'venetian');
     } else {
-      this.threeService.loadGltfModel('assets/rollerdoor.gltf', 'rollerdoor');
+      if (this.mainframe && this.background_color_image_url) {
+        this.threeService.initialize2d(this.canvasRef, this.containerRef.nativeElement);
+        this.threeService.createObjects(this.mainframe, this.background_color_image_url);
+      }
     }
-
-  } 
-  // ✅ Else: Initialize 2D mode
-  else if (this.mainframe && this.background_color_image_url) {
-    this.threeService.initialize2d(canvas, container);
-    this.threeService.createObjects(this.mainframe, this.background_color_image_url);
   }
-}
 
   toggle3D() {
     this.is3DOn = !this.is3DOn;
@@ -888,12 +885,12 @@ private fetchInitialData(params: any): void {
       if (canUpdate && (field.fieldtypeid === 5 && field.level == 2 || field.fieldtypeid === 20) && selectedOption.optionimage) {
           this.background_color_image_url = this.apiUrl + '/api/public' + selectedOption.optionimage;
          
-          //this.threeService.updateTextures(this.background_color_image_url);
+          this.threeService.updateTextures(this.background_color_image_url);
       }
       
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Curtain Colour" ) && selectedOption.optionimage) {
             
-          //this.threeService.updateTextures(this.apiUrl + '/api/public' + selectedOption.optionimage);
+          this.threeService.updateTextures(this.apiUrl + '/api/public' + selectedOption.optionimage);
       }
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Frame Colour" ) && selectedOption.optionimage) {
             
