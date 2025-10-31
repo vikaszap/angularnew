@@ -466,11 +466,25 @@ ngOnInit(): void {
   }
 
   toggle3D() {
-    this.is3DOn = !this.is3DOn;
-    this.setupVisualizer(this.productname);
-    if (this.is3DOn && this.background_color_image_url) {
-      this.splineService.updateTextures(this.background_color_image_url);
+    // First, dispose of the current visualizer
+    if (this.is3DOn) {
+      this.splineService.dispose();
+    } else {
+      this.threeService.dispose();
     }
+
+    // Toggle the state
+    this.is3DOn = !this.is3DOn;
+
+    // Set a brief timeout to allow the DOM to update and canvas to be recreated
+    setTimeout(() => {
+      this.setupVisualizer(this.productname);
+
+      // After setting up the new visualizer, apply any necessary textures
+      if (this.is3DOn && this.background_color_image_url) {
+        this.splineService.updateTextures(this.background_color_image_url);
+      }
+    }, 0);
   }
   @HostListener('window:resize')
   onWindowResize(): void {

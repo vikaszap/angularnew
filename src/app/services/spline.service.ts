@@ -20,7 +20,14 @@ export class SplineService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.splineApp = undefined;
+    this.dispose();
+  }
+
+  public dispose(): void {
+    if (this.splineApp) {
+      this.splineApp.dispose();
+      this.splineApp = undefined;
+    }
   }
 
   public initialize(canvas: HTMLCanvasElement, sceneUrl: string): void {

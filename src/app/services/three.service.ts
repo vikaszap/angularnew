@@ -245,65 +245,85 @@ export class ThreeService implements OnDestroy {
   }
 
   public createObjects(frameUrl: string, backgroundUrl: string): void {
-    if (backgroundUrl) {
-      this.textureLoader.load(backgroundUrl, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        const { width, height } = this.getPlaneSize(texture.image);
-        const geometry = new THREE.PlaneGeometry(width, height);
-        const material = new THREE.MeshBasicMaterial({ map: texture, transparent: false });
-        this.backgroundMesh = new THREE.Mesh(geometry, material);
-        this.backgroundMesh.position.z = -1;
-        this.scene.add(this.backgroundMesh);
-        this.render();
-      });
-    }
+    // Load the frame first to determine the geometry for both planes
+    this.textureLoader.load(frameUrl, (frameTexture) => {
+      frameTexture.colorSpace = THREE.SRGBColorSpace;
+      const { width, height } = this.getPlaneSize(frameTexture.image);
 
-    this.textureLoader.load(frameUrl, (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      const { width, height } = this.getPlaneSize(texture.image);
+      // Create a single geometry instance to be shared by both meshes
       const geometry = new THREE.PlaneGeometry(width, height);
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
+
+      // Create the frame mesh (foreground)
+      const frameMaterial = new THREE.MeshBasicMaterial({
+        map: frameTexture,
         transparent: true,
         alphaTest: 0.1,
         depthWrite: false,
       });
-      this.frameMesh = new THREE.Mesh(geometry, material);
-      this.frameMesh.position.z = 0;
+      this.frameMesh = new THREE.Mesh(geometry, frameMaterial);
+      this.frameMesh.position.z = 0; // Frame is in front
       this.scene.add(this.frameMesh);
+
+      // Create the background mesh (background)
+      const backgroundMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: false });
+      this.backgroundMesh = new THREE.Mesh(geometry, backgroundMaterial);
+      this.backgroundMesh.position.z = -1; // Background is behind
+      this.scene.add(this.backgroundMesh);
+
+      // Now load the background texture and apply it
+      if (backgroundUrl) {
+        this.textureLoader.load(backgroundUrl, (backgroundTexture) => {
+          backgroundTexture.colorSpace = THREE.SRGBColorSpace;
+          (this.backgroundMesh.material as THREE.MeshBasicMaterial).map = backgroundTexture;
+          (this.backgroundMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
+          this.render();
+        });
+      }
       this.render();
     });
   }
 
   public updateTextures2d(frameUrl: string, backgroundUrl: string): void {
-    if (this.frameMesh) {
+    // Update frame texture and resize geometry if needed
+    if (this.frameMesh && frameUrl) {
       this.textureLoader.load(frameUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
         const { width, height } = this.getPlaneSize(texture.image);
+
+        // A new geometry is needed for both if the frame's aspect ratio changes
+        const newGeometry = new THREE.PlaneGeometry(width, height);
+
+        // Dispose the old shared geometry and replace it on both meshes
         this.frameMesh.geometry.dispose();
-        this.frameMesh.geometry = new THREE.PlaneGeometry(width, height);
+        this.frameMesh.geometry = newGeometry;
+        if(this.backgroundMesh) {
+            this.backgroundMesh.geometry = newGeometry;
+        }
+
         (this.frameMesh.material as THREE.MeshBasicMaterial).map = texture;
         (this.frameMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
+
         this.render();
       });
     }
 
+    // Update background texture only
     if (backgroundUrl) {
       this.textureLoader.load(backgroundUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
+
         if (!this.backgroundMesh) {
-          const { width, height } = this.getPlaneSize(texture.image);
-          const geometry = new THREE.PlaneGeometry(width, height);
-          const material = new THREE.MeshBasicMaterial({ map: texture, transparent: false });
-          this.backgroundMesh = new THREE.Mesh(geometry, material);
-          this.backgroundMesh.position.z = -1;
-          this.scene.add(this.backgroundMesh);
+          // This case handles if background is added for the first time after initial creation
+          if (this.frameMesh) {
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            this.backgroundMesh = new THREE.Mesh(this.frameMesh.geometry, material); // Use frame's geometry
+            this.backgroundMesh.position.z = -1;
+            this.scene.add(this.backgroundMesh);
+          }
         } else {
-          const { width, height } = this.getPlaneSize(texture.image);
-          this.backgroundMesh.geometry.dispose();
-          this.backgroundMesh.geometry = new THREE.PlaneGeometry(width, height);
-          (this.backgroundMesh.material as THREE.MeshBasicMaterial).map = texture;
-          (this.backgroundMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
+            // Simply update the map on the existing material
+            (this.backgroundMesh.material as THREE.MeshBasicMaterial).map = texture;
+            (this.backgroundMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
         }
         this.render();
       });
@@ -439,6 +459,44 @@ export class ThreeService implements OnDestroy {
     this.isZooming = enabled;
   }
 
+  public dispose(): void {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = undefined;
+    }
+
+    // Traverse the scene and dispose of all objects
+    if (this.scene) {
+      this.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else if (object.material) {
+            object.material.dispose();
+          }
+        }
+      });
+      // Remove all children from the scene
+      while(this.scene.children.length > 0){
+        this.scene.remove(this.scene.children[0]);
+      }
+    }
+
+    if (this.renderer) {
+      this.renderer.dispose();
+      this.renderer = null!;
+    }
+
+    // Nullify other properties
+    this.camera = null!;
+    this.camera2d = null!;
+    this.zoomCamera = null!;
+    this.controls = null!;
+    this.scene = null!;
+  }
   private render(): void {
     if (!this.renderer || !this.scene) {
       return;
