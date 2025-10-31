@@ -48,15 +48,43 @@ export class SplineService implements OnDestroy {
   }
 
   public updateTextures(imageUrl: string, objectName = 'BlindMaterial'): void {
-    if (this.splineApp && this.textureLoader) {
-      const obj = this.splineApp.findObjectByName(objectName);
-      if (obj && (obj as any).material) {
-        this.textureLoader.load(imageUrl, (texture) => {
-          (obj as any).material.map = texture;
-          (obj as any).material.needsUpdate = true;
-        });
-      }
+    if (!this.splineApp || !this.textureLoader) {
+      console.warn('Spline app or texture loader not initialized.');
+      return;
     }
+
+    const obj = this.splineApp.findObjectByName(objectName);
+
+    if (!obj) {
+      console.warn(`Spline object with name "${objectName}" not found.`);
+      return;
+    }
+
+    const mesh = obj as any; // Assuming obj is a mesh-like object
+    if (!mesh.material) {
+      console.warn(`Object "${objectName}" does not have a material.`);
+      return;
+    }
+
+    this.textureLoader.load(imageUrl, (texture) => {
+      // Ensure correct color space for the new texture
+      // Cast to `any` to bypass faulty type definitions in the Spline runtime library
+      const three = (this.splineApp as any)?.findApp('three');
+      if (three) {
+        texture.colorSpace = (three as any).SRGBColorSpace;
+      }
+
+      // Dispose of the old texture if it exists to free up memory
+      if (mesh.material.map) {
+        mesh.material.map.dispose();
+      }
+
+      // Clone the material, apply the new texture, and reassign it
+      const newMaterial = mesh.material.clone();
+      newMaterial.map = texture;
+      newMaterial.needsUpdate = true;
+      mesh.material = newMaterial;
+    });
   }
 
   public zoomIn(): void {

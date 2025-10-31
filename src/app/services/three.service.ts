@@ -361,12 +361,15 @@ export class ThreeService implements OnDestroy {
 
     let width: number, height: number;
 
+    // Logic to fit the image within the canvas (letterboxing)
     if (canvasAspect > imageAspect) {
-      width = canvasWidth;
-      height = canvasWidth / imageAspect;
-    } else {
+      // Canvas is wider than the image
       height = canvasHeight;
       width = canvasHeight * imageAspect;
+    } else {
+      // Canvas is taller than or same aspect as the image
+      width = canvasWidth;
+      height = canvasWidth / imageAspect;
     }
 
     return { width, height };
