@@ -7,6 +7,7 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { OrderformComponent } from './orderform/orderform.component';
 import { ApiService } from './services/api.service';
+import { SplineService } from './services/spline.service';
 import { AppRoutingModule } from './app-routing.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -20,10 +21,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     HttpClientModule,
     RouterModule,
     AppRoutingModule,
-    OrderformComponent,
     BrowserAnimationsModule
   ],
-  providers: [ApiService],  // Added ApiService to providers
+  providers: [ApiService, SplineService],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

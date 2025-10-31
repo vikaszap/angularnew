@@ -34,8 +34,7 @@
             <div class="product_preview"
                     #visualizerContainer (mousemove)="onMouseMove($event)" (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">              
                     <div id="main-img" class="configuratorpreviewimage" style="height:480px; position: relative;">
-                <canvas #visualizerCanvas></canvas>
-                <div #zoomLens class="zoom-lens" [hidden]="!isZooming"></div>
+                <canvas #visualizerCanvas style="width: 100%; height: 100%;"></canvas>
                 <div class="visualizer-controls">
                  <button *ngIf="is3DOn" type="button" mat-icon-button (click)="resetCamera()" aria-label="Reset view">
                     <mat-icon>refresh</mat-icon>

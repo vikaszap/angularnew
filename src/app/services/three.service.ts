@@ -245,85 +245,68 @@ export class ThreeService implements OnDestroy {
   }
 
   public createObjects(frameUrl: string, backgroundUrl: string): void {
-    const width = this.renderer.domElement.clientWidth;
-    const height = this.renderer.domElement.clientHeight;
-
     if (backgroundUrl) {
-      const backgroundGeometry = new THREE.PlaneGeometry(width, height);
-      const backgroundTexture = this.textureLoader.load(backgroundUrl);
-      backgroundTexture.colorSpace = THREE.SRGBColorSpace;
-      const backgroundMaterial = new THREE.MeshBasicMaterial({
-        map: backgroundTexture,
-        transparent: false
+      this.textureLoader.load(backgroundUrl, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const { width, height } = this.getPlaneSize(texture.image);
+        const geometry = new THREE.PlaneGeometry(width, height);
+        const material = new THREE.MeshBasicMaterial({ map: texture, transparent: false });
+        this.backgroundMesh = new THREE.Mesh(geometry, material);
+        this.backgroundMesh.position.z = -1;
+        this.scene.add(this.backgroundMesh);
+        this.render();
       });
-      this.backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
-      this.backgroundMesh.position.z = -1;
-      this.scene.add(this.backgroundMesh);
     }
 
-    const frameGeometry = new THREE.PlaneGeometry(width, height);
-    const frameTexture = this.textureLoader.load(frameUrl, () => {
+    this.textureLoader.load(frameUrl, (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const { width, height } = this.getPlaneSize(texture.image);
+      const geometry = new THREE.PlaneGeometry(width, height);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.1,
+        depthWrite: false,
+      });
+      this.frameMesh = new THREE.Mesh(geometry, material);
+      this.frameMesh.position.z = 0;
+      this.scene.add(this.frameMesh);
       this.render();
     });
-    frameTexture.colorSpace = THREE.SRGBColorSpace;
-    const frameMaterial = new THREE.MeshBasicMaterial({
-      map: frameTexture,
-      transparent: true,
-      alphaTest: 0.1,
-      depthWrite: false
-    });
-    this.frameMesh = new THREE.Mesh(frameGeometry, frameMaterial);
-    this.frameMesh.position.z = 0;
-    this.scene.add(this.frameMesh);
   }
 
   public updateTextures2d(frameUrl: string, backgroundUrl: string): void {
     if (this.frameMesh) {
-      const oldMaterial = this.frameMesh.material as THREE.MeshBasicMaterial;
-      if (oldMaterial.map) {
-        oldMaterial.map.dispose();
-      }
-      const frameTexture = this.textureLoader.load(frameUrl, () => {
+      this.textureLoader.load(frameUrl, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const { width, height } = this.getPlaneSize(texture.image);
+        this.frameMesh.geometry.dispose();
+        this.frameMesh.geometry = new THREE.PlaneGeometry(width, height);
+        (this.frameMesh.material as THREE.MeshBasicMaterial).map = texture;
+        (this.frameMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
         this.render();
       });
-      frameTexture.colorSpace = THREE.SRGBColorSpace;
-      const frameMaterial = new THREE.MeshBasicMaterial({
-        map: frameTexture,
-        transparent: true,
-        alphaTest: 0.1,
-        depthWrite: false
-      });
-      this.frameMesh.material = frameMaterial;
-      oldMaterial.dispose();
     }
 
     if (backgroundUrl) {
-      if (!this.backgroundMesh) {
-        const width = this.renderer.domElement.clientWidth;
-        const height = this.renderer.domElement.clientHeight;
-        const backgroundGeometry = new THREE.PlaneGeometry(width, height);
-        const backgroundTexture = this.textureLoader.load(backgroundUrl, () => { this.render(); });
-        backgroundTexture.colorSpace = THREE.SRGBColorSpace;
-        const backgroundMaterial = new THREE.MeshBasicMaterial({ map: backgroundTexture, transparent: false });
-        this.backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
-        this.backgroundMesh.position.z = -1;
-        this.scene.add(this.backgroundMesh);
-      } else {
-        const oldMaterial = this.backgroundMesh.material as THREE.MeshBasicMaterial;
-        if (oldMaterial.map) {
-          oldMaterial.map.dispose();
+      this.textureLoader.load(backgroundUrl, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        if (!this.backgroundMesh) {
+          const { width, height } = this.getPlaneSize(texture.image);
+          const geometry = new THREE.PlaneGeometry(width, height);
+          const material = new THREE.MeshBasicMaterial({ map: texture, transparent: false });
+          this.backgroundMesh = new THREE.Mesh(geometry, material);
+          this.backgroundMesh.position.z = -1;
+          this.scene.add(this.backgroundMesh);
+        } else {
+          const { width, height } = this.getPlaneSize(texture.image);
+          this.backgroundMesh.geometry.dispose();
+          this.backgroundMesh.geometry = new THREE.PlaneGeometry(width, height);
+          (this.backgroundMesh.material as THREE.MeshBasicMaterial).map = texture;
+          (this.backgroundMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
         }
-        const backgroundTexture = this.textureLoader.load(backgroundUrl, () => {
-          this.render();
-        });
-        backgroundTexture.colorSpace = THREE.SRGBColorSpace;
-        const backgroundMaterial = new THREE.MeshBasicMaterial({
-          map: backgroundTexture,
-          transparent: false
-        });
-        this.backgroundMesh.material = backgroundMaterial;
-        oldMaterial.dispose();
-      }
+        this.render();
+      });
     }
   }
 
@@ -348,6 +331,25 @@ export class ThreeService implements OnDestroy {
         });
       }
     });
+  }
+
+  private getPlaneSize(image: HTMLImageElement): { width: number; height: number } {
+    const canvasWidth = this.renderer.domElement.clientWidth;
+    const canvasHeight = this.renderer.domElement.clientHeight;
+    const canvasAspect = canvasWidth / canvasHeight;
+    const imageAspect = image.width / image.height;
+
+    let width: number, height: number;
+
+    if (canvasAspect > imageAspect) {
+      width = canvasWidth;
+      height = canvasWidth / imageAspect;
+    } else {
+      height = canvasHeight;
+      width = canvasHeight * imageAspect;
+    }
+
+    return { width, height };
   }
 
   public updateFrame(backgroundUrl: string): void {
@@ -392,16 +394,16 @@ export class ThreeService implements OnDestroy {
   public onResize(container: HTMLElement): void {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    
+
     if (this.renderer) {
       this.renderer.setSize(width, height, false);
     }
-    
+
     if (this.camera?.isPerspectiveCamera) {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
     }
-    
+
     if (this.camera2d?.isOrthographicCamera) {
       this.camera2d.left = width / -2;
       this.camera2d.right = width / 2;
@@ -409,17 +411,23 @@ export class ThreeService implements OnDestroy {
       this.camera2d.bottom = height / -2;
       this.camera2d.updateProjectionMatrix();
 
-      if (this.frameMesh) {
+      if (this.frameMesh && (this.frameMesh.material as THREE.MeshBasicMaterial).map) {
+        const { width: planeWidth, height: planeHeight } = this.getPlaneSize(
+          (this.frameMesh.material as THREE.MeshBasicMaterial).map!.image
+        );
         this.frameMesh.geometry.dispose();
-        this.frameMesh.geometry = new THREE.PlaneGeometry(width, height);
+        this.frameMesh.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
       }
-      if (this.backgroundMesh) {
+      if (this.backgroundMesh && (this.backgroundMesh.material as THREE.MeshBasicMaterial).map) {
+        const { width: planeWidth, height: planeHeight } = this.getPlaneSize(
+          (this.backgroundMesh.material as THREE.MeshBasicMaterial).map!.image
+        );
         this.backgroundMesh.geometry.dispose();
-        this.backgroundMesh.geometry = new THREE.PlaneGeometry(width, height);
+        this.backgroundMesh.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
       }
       this.render();
     }
-}
+  }
 
 
   public setZoom(x: number, y: number): void {

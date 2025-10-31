@@ -9,7 +9,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
-import { ThreeService } from '../services/three.service';;
+import { SplineService } from '../services/spline.service';
+import { ThreeService } from '../services/three.service';
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -327,6 +328,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private cd: ChangeDetectorRef,
+    private splineService: SplineService,
     private threeService: ThreeService,
     private http: HttpClient,
   ) {
@@ -440,22 +442,21 @@ ngOnInit(): void {
   }
 
   private setupVisualizer(productname: string): void {
-    if (!this.canvasRef || !this.containerRef) return;
+    if (!this.canvasRef) return;
 
     if (this.is3DOn) {
-      this.threeService.initialize(this.canvasRef, this.containerRef.nativeElement);
-
+      let sceneUrl = '';
       if (productname.toLowerCase().includes('roller blinds')) {
-        this.threeService.loadGltfModel('assets/rollerblinds.gltf', 'rollerblinds');
+        sceneUrl = 'https://prod.spline.design/YOUR-SCENE-URL/scene.splinecode';
       } else if (
         productname.toLowerCase().includes('venetian') ||
         productname.toLowerCase().includes('fauxwood')
       ) {
-        this.threeService.loadGltfModel('assets/venetianblinds.gltf', 'venetian');
+        sceneUrl = 'https://prod.spline.design/YOUR-SCENE-URL/scene.splinecode';
       } else {
-        this.threeService.loadGltfModel('assets/rollerdoor.gltf', 'rollerdoor');
+        sceneUrl = 'https://prod.spline.design/YOUR-SCENE-URL/scene.splinecode';
       }
-
+      this.splineService.initialize(this.canvasRef.nativeElement, sceneUrl);
     } else {
       this.threeService.initialize2d(this.canvasRef, this.containerRef.nativeElement);
       if (this.mainframe) {
@@ -468,24 +469,28 @@ ngOnInit(): void {
     this.is3DOn = !this.is3DOn;
     this.setupVisualizer(this.productname);
     if (this.is3DOn && this.background_color_image_url) {
-      this.threeService.updateTextures(this.background_color_image_url);
+      this.splineService.updateTextures(this.background_color_image_url);
     }
   }
   @HostListener('window:resize')
   onWindowResize(): void {
     if (this.containerRef) {
-      this.threeService.onResize(this.containerRef.nativeElement);
+      if (this.is3DOn) {
+        this.splineService.onResize(this.containerRef.nativeElement);
+      } else {
+        this.threeService.onResize(this.containerRef.nativeElement);
+      }
     }
   }
 zoomIn(): void {
   if (this.is3DOn) {
-    this.threeService.zoomIn();
+    this.splineService.zoomIn();
   }
 }
 
 zoomOut(): void {
     if (this.is3DOn) {
-      this.threeService.zoomOut();
+      this.splineService.zoomOut();
     }
   }
   
@@ -912,19 +917,26 @@ private fetchInitialData(params: any): void {
       if (canUpdate && (field.fieldtypeid === 5 && field.level == 2 || field.fieldtypeid === 20) && selectedOption.optionimage) {
         this.background_color_image_url = this.apiUrl + '/api/public' + selectedOption.optionimage;
         if (this.is3DOn) {
-          this.threeService.updateTextures(this.background_color_image_url);
+          this.splineService.updateTextures(this.background_color_image_url);
         } else {
           this.threeService.updateTextures2d(this.mainframe, this.background_color_image_url);
         }
       }
       
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Curtain Colour" ) && selectedOption.optionimage) {
-            
+        if (this.is3DOn) {
+          this.splineService.updateTextures(this.apiUrl + '/api/public' + selectedOption.optionimage);
+        } else {
           this.threeService.updateTextures(this.apiUrl + '/api/public' + selectedOption.optionimage);
+        }
       }
+
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Frame Colour" ) && selectedOption.optionimage) {
-            
+        if (this.is3DOn) {
+          this.splineService.updateFrame(this.apiUrl + '/api/public' + selectedOption.optionimage);
+        } else {
           this.threeService.updateFrame(this.apiUrl + '/api/public' + selectedOption.optionimage);
+        }
       }
       this.processSelectedOption(params, field, selectedOption).pipe(
         takeUntil(this.destroy$)
@@ -1042,7 +1054,7 @@ private fetchInitialData(params: any): void {
       img.is_default = (img.image_url === newFrameUrl);
     });
 
-    if (this.threeService) {
+    if (!this.is3DOn) {
       this.threeService.updateTextures2d(this.mainframe, this.background_color_image_url);
     }
   }
@@ -1757,7 +1769,7 @@ onSubmit(): void {
     this.isSubmitting = true;
     this.errorMessage = null;
     console.log(this.pricedata);
-    const visualizerImage = this.threeService.getCanvasDataURL();
+    const visualizerImage = this.is3DOn ? this.splineService.getCanvasDataURL() : this.threeService.getCanvasDataURL();
 
     this.apiService.addToCart(this.jsondata, this.routeParams.cart_productid, this.routeParams.site,
      this.buildProductTitle(this.ecomproductname,this.fabricname,this.colorname),
@@ -2028,7 +2040,7 @@ private markFormGroupTouched(formGroup: FormGroup) {
 
   resetCamera(): void {
     if (this.is3DOn) {
-      this.threeService.resetCamera();
+      this.splineService.resetCamera();
     }
   }
 
