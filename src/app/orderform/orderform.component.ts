@@ -196,6 +196,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   isZooming = false;
   mainframe!: string;
   background_color_image_url!: string;
+  showCanvas = true;
   private destroy$ = new Subject<void>();
   private readonly MAX_NESTING_LEVEL = 8;
   private priceGroupField?: ProductField;
@@ -431,6 +432,11 @@ ngOnInit(): void {
 }
 
   ngOnDestroy(): void {
+    if (this.is3DOn) {
+      this.splineService.dispose();
+    } else {
+      this.threeService.dispose();
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -466,21 +472,30 @@ ngOnInit(): void {
   }
 
   toggle3D() {
-    // First, dispose of the current visualizer
+    // Step 1: Dispose the current service
     if (this.is3DOn) {
       this.splineService.dispose();
     } else {
       this.threeService.dispose();
     }
 
-    // Toggle the state
+    // Step 2: Hide the canvas to force Angular to destroy it
+    this.showCanvas = false;
+    this.cd.detectChanges(); // Manually trigger change detection
+
+    // Step 3: Toggle the state
     this.is3DOn = !this.is3DOn;
 
-    // Set a brief timeout to allow the DOM to update and canvas to be recreated
+    // Step 4: Show the canvas again to force Angular to recreate it
+    this.showCanvas = true;
+    this.cd.detectChanges(); // Manually trigger change detection again
+
+    // Step 5: Initialize the new visualizer on the fresh canvas
+    // Use a timeout to ensure the canvas element is available in the DOM
     setTimeout(() => {
       this.setupVisualizer(this.productname);
 
-      // After setting up the new visualizer, apply any necessary textures
+      // Re-apply textures if needed
       if (this.is3DOn && this.background_color_image_url) {
         this.splineService.updateTextures(this.background_color_image_url);
       }
