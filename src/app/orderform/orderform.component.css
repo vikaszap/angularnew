@@ -547,7 +547,7 @@ canvas {
   color: #222;
 }
 
-.parameter-wrapper mat-button-toggle.mat-button-toggle-checked {
+mat-button-toggle.mat-button-toggle-checked {
   background-color:var(--primary-color) !important; 
   color: #fff !important;              
   border-color: var(--primary-color) !important;     
@@ -801,68 +801,6 @@ mat-button-toggle-group:disabled {
   max-width: 300px;
   word-wrap: break-word;
 }
-
-.threeD-toggle {
-  display: flex;
-  align-items: center;
-  background-color: var(--card-bg);
-  border-radius: var(--border-radius);
-  padding: 6px; /* Outer padding around buttons */
-  box-shadow: var(--box-shadow);
-  width: fit-content;
-  border: 1px solid var(--border-color);
-  transition: var(--transition);
-  gap: 4px; /* Space between the two toggles */
-}
-
-.threeD-toggle mat-button-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-weight: 500;
-  color: var(--text-color);
-  border-radius: var(--border-radius) !important;
-  transition: var(--transition);
-  padding: 8px 16px; /* Adjusted padding for balance */
-  background-color: transparent;
-  border: none;
-  min-width: 70px; /* Ensures uniform button width */
-}
-
-/* Hover state */
-.threeD-toggle mat-button-toggle:hover {
-  background-color: var(--primary-hover);
-  color: #fff;
-}
-
-/* Active (checked) state */
-.threeD-toggle mat-button-toggle.mat-button-toggle-checked {
-  background-color: var(--primary-color);
-  color: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--primary-color);
-}
-
-/* Icon styling */
-.threeD-toggle mat-icon {
-  font-size: 20px;
-  color: inherit;
-  vertical-align: middle;
-}
-
-/* Compact adjustments for mobile */
-@media (max-width: 768px) {
-  .threeD-toggle {
-    padding: 4px;
-    gap: 2px;
-  }
-  .threeD-toggle mat-button-toggle {
-    padding: 6px 10px;
-    font-size: 0.9rem;
-  }
-}
-
 .visualizer-view-controls {
     position: absolute;
     top: 0;
