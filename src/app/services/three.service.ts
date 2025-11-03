@@ -50,11 +50,27 @@ export class ThreeService implements OnDestroy {
     if (this.renderer) {
       this.renderer.dispose();
     }
+    if (this.textureMaterial) {
+      this.textureMaterial.dispose();
+    }
     this.scene = new THREE.Scene();
     this.camera = null!;
     this.camera2d = null!;
     this.zoomCamera = null!;
     this.controls = null!;
+     this.cube2Mesh = null!;
+    this.frameMesh = null!;
+    this.cube4Mesh = null!;
+    this.cube5Meshes = [];
+    this.cube3Mesh = null!;
+    this.backgroundMesh = null!;
+    this.textureMaterial = undefined;
+    this.cubeMesh = null!;
+    this.initialCameraPosition = null!;
+    this.initialControlsTarget = null!;
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.isZooming = false;
   }
 
   public initialize(canvas: ElementRef<HTMLCanvasElement>, container: HTMLElement): void {
