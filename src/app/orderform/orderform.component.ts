@@ -443,7 +443,7 @@ ngOnInit(): void {
     if (!this.canvasRef || !this.containerRef) return;
 
     if (this.is3DOn) {
-      this.threeService.initialize(this.canvasRef, this.containerRef.nativeElement);
+      this.threeService.initializeboth(this.canvasRef, this.containerRef.nativeElement,'3d');
 
       if (productname.toLowerCase().includes('roller blinds')) {
         this.threeService.loadGltfModel('assets/rollerblinds.gltf', 'rollerblinds');
@@ -457,7 +457,7 @@ ngOnInit(): void {
       }
 
     } else {
-      this.threeService.initialize2d(this.canvasRef, this.containerRef.nativeElement);
+      this.threeService.initializeboth(this.canvasRef, this.containerRef.nativeElement,'2d');
       if (this.mainframe) {
         this.threeService.createObjects(this.mainframe, this.background_color_image_url);
       }
