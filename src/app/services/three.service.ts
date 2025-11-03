@@ -42,214 +42,88 @@ export class ThreeService implements OnDestroy {
     this.resetState();
   }
   
- private resetState(): void {
-  if (this.renderer) {
-    this.renderer.dispose();
-    this.renderer.forceContextLoss();
-    this.renderer.domElement = null as any;
+  private resetState(): void {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = undefined;
+    }
+    if (this.renderer) {
+      this.renderer.dispose();
+    }
+    this.scene = new THREE.Scene();
+    this.camera = null!;
+    this.camera2d = null!;
+    this.zoomCamera = null!;
+    this.controls = null!;
   }
 
-  if (this.scene) {
-    this.scene.traverse((obj: any) => {
-      if (obj.geometry) obj.geometry.dispose();
-      if (obj.material) {
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach((m: any) => m.dispose());
-        } else {
-          obj.material.dispose();
-        }
-      }
-    });
-  }
+  public initialize(canvas: ElementRef<HTMLCanvasElement>, container: HTMLElement): void {
+    this.resetState();
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-  if (this.controls) {
-    this.controls.dispose();
-  }
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0xffffff);
 
-  this.scene = null as any;
-  this.camera = null as any;
-  this.camera2d = null as any;
-  this.zoomCamera = null as any;
-  this.controls = null as any;
-  this.renderer = null as any;
-}
-public initializeboth(
-  canvas: ElementRef<HTMLCanvasElement>,
-  container: HTMLElement,
-  mode: '2d' | '3d' = '3d'
-): void {
-  this.resetState();
-
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  const canvasEl = canvas.nativeElement;
-
-  // Common setup
-  this.scene = new THREE.Scene();
-  this.scene.background = mode === '3d' ? new THREE.Color(0xffffff) : null;
-
-  // Renderer
-  console.log(canvasEl);
-  this.renderer = new THREE.WebGLRenderer({
-    canvas: canvasEl,
-    alpha: true,
-    antialias: true,
-    preserveDrawingBuffer: true
-  });
-  this.renderer.setPixelRatio(window.devicePixelRatio);
-  this.renderer.setSize(width, height, false);
-  this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-  // --- CAMERA SETUP ---
-  if (mode === '2d') {
-    const aspect = width / height;
-    const frustumSize = 500; // You can adjust this
-    this.camera2d = new THREE.OrthographicCamera(
-      (-frustumSize * aspect) / 2,
-      (frustumSize * aspect) / 2,
-      frustumSize / 2,
-      -frustumSize / 2,
-      0.1,
-      2000
-    );
-    this.camera2d.position.set(0, 0, 10);
-  } else {
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    this.camera.position.set(0, 0, 5);
+    this.camera.position.z = 5;
+
+    const canvasEl = canvas.nativeElement;
+
+    canvasEl.classList.add('grab');
+
+    canvasEl.addEventListener('mousedown', () => {
+      canvasEl.classList.remove('grab');
+      canvasEl.classList.add('grabbing');
+    });
+
+    canvasEl.addEventListener('mouseup', () => {
+      canvasEl.classList.remove('grabbing');
+      canvasEl.classList.add('grab');
+    });
+
+    canvasEl.addEventListener('mouseleave', () => {
+      canvasEl.classList.remove('grabbing');
+      canvasEl.classList.add('grab');
+    });
+
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: canvasEl,
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: true
+    });
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(width, height, false);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-  }
 
-  // --- LIGHTS (only for 3D) ---
-  if (mode === '3d') {
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    const dir = new THREE.DirectionalLight(0xffffff, 1);
-    dir.position.set(1, 1, 2).normalize();
-    this.scene.add(ambient, dir);
-  }
+    this.initialCameraPosition = this.camera.position.clone();
+    this.initialControlsTarget = this.controls.target.clone();
 
-  // --- HANDLE RESIZE ---
-  window.addEventListener('resize', () => {
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-
-    this.renderer.setSize(w, h, false);
-
-    if (mode === '3d' && this.camera) {
-      this.camera.aspect = w / h;
-      this.camera.updateProjectionMatrix();
-    }
-
-    if (mode === '2d' && this.camera2d) {
-      const aspect = w / h;
-      const frustumSize = 500;
-      this.camera2d.left = (-frustumSize * aspect) / 2;
-      this.camera2d.right = (frustumSize * aspect) / 2;
-      this.camera2d.top = frustumSize / 2;
-      this.camera2d.bottom = -frustumSize / 2;
-      this.camera2d.updateProjectionMatrix();
-    }
-  });
-
-  // --- CURSOR BEHAVIOR (only for 3D) ---
-  if (mode === '3d') {
-    canvasEl.classList.add('grab');
     this.controls.addEventListener('start', () => {
       canvasEl.classList.remove('grab');
       canvasEl.classList.add('grabbing');
     });
+
     this.controls.addEventListener('end', () => {
       canvasEl.classList.remove('grabbing');
       canvasEl.classList.add('grab');
     });
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(1, 1, 1).normalize();
+    this.scene.add(directionalLight);
+    
+    this.animate();
   }
-
-  this.animate();
-}
-public initialize(canvas: ElementRef<HTMLCanvasElement>, container: HTMLElement): void {
-
-  this.resetState();
-
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-
-  // 🔹 Create scene
-  this.scene = new THREE.Scene();
-  this.scene.background = new THREE.Color(0xffffff);
-
-  // 🔹 Create perspective camera
-  this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-  this.camera.position.set(0, 0, 5); // ensure proper position
-
-  // 🔹 Setup canvas
-  const canvasEl = canvas.nativeElement;
-  canvasEl.classList.add('grab');
-
-  // Cursor feedback
-  canvasEl.addEventListener('mousedown', () => {
-    canvasEl.classList.remove('grab');
-    canvasEl.classList.add('grabbing');
-  });
-  canvasEl.addEventListener('mouseup', () => {
-    canvasEl.classList.remove('grabbing');
-    canvasEl.classList.add('grab');
-  });
-  canvasEl.addEventListener('mouseleave', () => {
-    canvasEl.classList.remove('grabbing');
-    canvasEl.classList.add('grab');
-  });
-
-  // 🔹 Create renderer
-  this.renderer = new THREE.WebGLRenderer({
-    canvas: canvasEl,
-    alpha: true,
-    antialias: true,
-    preserveDrawingBuffer: true
-  });
-  this.renderer.setPixelRatio(window.devicePixelRatio);
-  this.renderer.setSize(width, height, false);
-  this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  this.renderer.toneMappingExposure = 1;
-  this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-  // ✅ Update camera aspect AFTER renderer size is set
-  this.camera.aspect = width / height;
-  this.camera.updateProjectionMatrix();
-
-  // 🔹 Create orbit controls
-  this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-  this.controls.enableDamping = true;
-  this.controls.dampingFactor = 0.05;
-  this.controls.rotateSpeed = 0.7;
-  this.controls.zoomSpeed = 0.8;
-  this.controls.panSpeed = 0.8;
-
-  // Save initial state for reset
-  this.initialCameraPosition = this.camera.position.clone();
-  this.initialControlsTarget = this.controls.target.clone();
-
-  // Update cursor states during control movement
-  this.controls.addEventListener('start', () => {
-    canvasEl.classList.remove('grab');
-    canvasEl.classList.add('grabbing');
-  });
-  this.controls.addEventListener('end', () => {
-    canvasEl.classList.remove('grabbing');
-    canvasEl.classList.add('grab');
-  });
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-  this.scene.add(ambientLight);
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(1, 1, 2).normalize();
-  this.scene.add(directionalLight);
-
-  this.animate();
-}
-
 
   public zoomIn(): void {
     if (this.controls) {
@@ -504,23 +378,16 @@ public initialize(canvas: ElementRef<HTMLCanvasElement>, container: HTMLElement)
     }
   }
 
- private animate = (): void => {
-  requestAnimationFrame(this.animate);
-
-  // update controls if available
-  if (this.controls) {
-    this.controls.update();
+  public animate(): void {
+    const loop = () => {
+      if (this.controls) {
+        this.controls.update();
+      }
+      this.render();
+      this.animationFrameId = requestAnimationFrame(loop);
+    };
+    loop();
   }
-
-  // render with whichever camera exists
-  if (this.renderer && this.scene) {
-    if (this.camera) {
-      this.renderer.render(this.scene, this.camera);
-    } else if (this.camera2d) {
-      this.renderer.render(this.scene, this.camera2d);
-    }
-  }
-};
 
   public onResize(container: HTMLElement): void {
     const width = container.clientWidth;
