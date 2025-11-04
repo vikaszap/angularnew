@@ -12,6 +12,20 @@ export class ThreeService implements OnDestroy {
   private camera2d!: THREE.OrthographicCamera;
   private renderer!: THREE.WebGLRenderer;
   private controls!: OrbitControls;
+  private canvasEl: HTMLCanvasElement | null = null;
+
+  private readonly onCanvasMouseDown = () => {
+    this.canvasEl?.classList.remove('grab');
+    this.canvasEl?.classList.add('grabbing');
+  };
+  private readonly onCanvasMouseUp = () => {
+    this.canvasEl?.classList.remove('grabbing');
+    this.canvasEl?.classList.add('grab');
+  };
+  private readonly onCanvasMouseLeave = () => {
+    this.canvasEl?.classList.remove('grabbing');
+    this.canvasEl?.classList.add('grab');
+  };
   private textureLoader = new THREE.TextureLoader();
   private gltfLoader = new GLTFLoader();
   private cube2Mesh!: THREE.Mesh;
@@ -53,12 +67,22 @@ export class ThreeService implements OnDestroy {
     if (this.textureMaterial) {
       this.textureMaterial.dispose();
     }
+    if (this.controls) {
+      this.controls.dispose();
+    }
+    if (this.canvasEl) {
+      this.canvasEl.removeEventListener('mousedown', this.onCanvasMouseDown);
+      this.canvasEl.removeEventListener('mouseup', this.onCanvasMouseUp);
+      this.canvasEl.removeEventListener('mouseleave', this.onCanvasMouseLeave);
+      this.canvasEl.classList.remove('grab', 'grabbing');
+      this.canvasEl = null;
+    }
     this.scene = new THREE.Scene();
     this.camera = null!;
     this.camera2d = null!;
     this.zoomCamera = null!;
     this.controls = null!;
-     this.cube2Mesh = null!;
+    this.cube2Mesh = null!;
     this.frameMesh = null!;
     this.cube4Mesh = null!;
     this.cube5Meshes = [];
@@ -84,27 +108,16 @@ export class ThreeService implements OnDestroy {
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     this.camera.position.z = 5;
 
-    const canvasEl = canvas.nativeElement;
+    this.canvasEl = canvas.nativeElement;
 
-    canvasEl.classList.add('grab');
+    this.canvasEl.classList.add('grab');
 
-    canvasEl.addEventListener('mousedown', () => {
-      canvasEl.classList.remove('grab');
-      canvasEl.classList.add('grabbing');
-    });
-
-    canvasEl.addEventListener('mouseup', () => {
-      canvasEl.classList.remove('grabbing');
-      canvasEl.classList.add('grab');
-    });
-
-    canvasEl.addEventListener('mouseleave', () => {
-      canvasEl.classList.remove('grabbing');
-      canvasEl.classList.add('grab');
-    });
+    this.canvasEl.addEventListener('mousedown', this.onCanvasMouseDown);
+    this.canvasEl.addEventListener('mouseup', this.onCanvasMouseUp);
+    this.canvasEl.addEventListener('mouseleave', this.onCanvasMouseLeave);
 
     this.renderer = new THREE.WebGLRenderer({
-      canvas: canvasEl,
+      canvas: this.canvasEl,
       alpha: true,
       antialias: true,
       preserveDrawingBuffer: true
@@ -121,15 +134,9 @@ export class ThreeService implements OnDestroy {
     this.initialCameraPosition = this.camera.position.clone();
     this.initialControlsTarget = this.controls.target.clone();
 
-    this.controls.addEventListener('start', () => {
-      canvasEl.classList.remove('grab');
-      canvasEl.classList.add('grabbing');
-    });
+    this.controls.addEventListener('start', this.onCanvasMouseDown);
 
-    this.controls.addEventListener('end', () => {
-      canvasEl.classList.remove('grabbing');
-      canvasEl.classList.add('grab');
-    });
+    this.controls.addEventListener('end', this.onCanvasMouseUp);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     this.scene.add(ambientLight);
@@ -278,8 +285,20 @@ public createObjects(frameUrl: string, backgroundUrl: string): void {
     const imgHeight = frameTexture.image.height;
     const aspect = imgWidth / imgHeight;
 
-    const viewHeight = this.renderer.domElement.clientHeight;
-    const viewWidth = viewHeight * aspect;
+    const canvas = this.renderer.domElement;
+    const canvasAspect = canvas.clientWidth / canvas.clientHeight;
+    
+    let viewWidth: number, viewHeight: number;
+
+    if (aspect > canvasAspect) {
+      // Texture is wider than the canvas, so fit to width
+      viewWidth = canvas.clientWidth;
+      viewHeight = viewWidth / aspect;
+    } else {
+      // Texture is taller than or equal to the canvas aspect ratio, so fit to height
+      viewHeight = canvas.clientHeight;
+      viewWidth = viewHeight * aspect;
+    }
 
     const frameGeometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
     const frameMaterial = new THREE.MeshBasicMaterial({
@@ -320,9 +339,19 @@ public updateTextures2d(frameUrl: string, backgroundUrl: string): void {
     const imgHeight = frameTexture.image.height;
     const aspect = imgWidth / imgHeight;
 
-    const viewHeight = this.renderer.domElement.clientHeight;
-    const viewWidth = viewHeight * aspect;
+    const canvas = this.renderer.domElement;
+    const canvasAspect = canvas.clientWidth / canvas.clientHeight;
+    
+    let viewWidth: number, viewHeight: number;
 
+    if (aspect > canvasAspect) {
+      viewWidth = canvas.clientWidth;
+      viewHeight = viewWidth / aspect;
+    } else {
+      viewHeight = canvas.clientHeight;
+      viewWidth = viewHeight * aspect;
+    }
+    
     if (this.frameMesh) {
       this.scene.remove(this.frameMesh);
       this.frameMesh.geometry.dispose();
@@ -395,11 +424,22 @@ public onResize(container: HTMLElement): void {
     if (!tex || !tex.image) return;
 
     const imgWidth = tex.image.width;
+    console.log(imgWidth);
     const imgHeight = tex.image.height;
+    console.log(imgHeight);
     const aspect = imgWidth / imgHeight;
 
-    const viewHeight = height;
-    const viewWidth = viewHeight * aspect;
+    const canvasAspect = width / height;
+    
+    let viewWidth: number, viewHeight: number;
+
+    if (aspect > canvasAspect) {
+      viewWidth = width;
+      viewHeight = viewWidth / aspect;
+    } else {
+      viewHeight = height;
+      viewWidth = viewHeight * aspect;
+    }
 
     mesh.geometry.dispose();
     mesh.geometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
