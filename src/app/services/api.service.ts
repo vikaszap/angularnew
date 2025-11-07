@@ -230,6 +230,31 @@ export class ApiService {
     return this.callApi('POST', passData, payload, true, false, api_url, api_key, api_name);
   }
 
+relatedProducts(
+  params: ApiCommonParams,
+  category_id: number,
+  related_fabric: number = 0,
+  colorid: number = 0
+): Observable<ApiResponse> {
+
+  const product_id = params['product_id'];
+  const api_url = params['api_url'];
+  const api_key = params['api_key'];
+  const api_name = params['api_name'];
+
+  let fabric_id = related_fabric || colorid;
+
+  const payload = {
+    related_fabric: fabric_id,
+    colorid: colorid,
+    productid: product_id,
+  };
+
+    const passData = `fabriclistview/${category_id}/${product_id}/?page=1&perpage=150`;
+
+    return this.callApi('POST', passData, payload, true, false, api_url, api_key, api_name);
+}
+
   getOptionlist(
     params: ApiCommonParams,
     level: number = 0,
@@ -406,4 +431,5 @@ export class ApiService {
     const passData = `orderitems/calculate/option/price`;
     return this.callApi('POST', passData, payload, true, false, api_url, api_key, api_name);
   }
+  
 }
