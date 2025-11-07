@@ -56,3 +56,13 @@ section {
     justify-content: space-between;
     flex-wrap: wrap;
 }
+
+.button-with-loader {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button-with-loader mat-spinner {
+    margin-right: 8px;
+}
