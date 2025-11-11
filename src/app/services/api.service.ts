@@ -64,7 +64,7 @@ export class ApiService {
     } else {
       url = this.constructUrl(`${api_url}/api/public/api`, passData);
     }
-
+    
     const headers = this.getHeaders(api_name, api_key);
 
     switch (method.toUpperCase()) {
@@ -237,10 +237,7 @@ relatedProducts(
   colorid: number = 0
 ): Observable<ApiResponse> {
 
-  const product_id = params['product_id'];
-  const api_url = params['api_url'];
-  const api_key = params['api_key'];
-  const api_name = params['api_name'];
+ const { api_url, api_key, api_name, product_id, ...rest } = params;
 
   let fabric_id = related_fabric || colorid;
 
@@ -249,10 +246,9 @@ relatedProducts(
     colorid: colorid,
     productid: product_id,
   };
-
     const passData = `fabriclistview/${category_id}/${product_id}/?page=1&perpage=150`;
 
-    return this.callApi('POST', passData, payload, true, false, api_url, api_key, api_name);
+    return this.callApi('POST', passData, payload, false, false, api_url, api_key, api_name);
 }
 
   getOptionlist(

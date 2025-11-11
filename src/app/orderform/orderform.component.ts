@@ -21,6 +21,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { HtmlTooltipDirective } from '../html-tooltip.directive';
 import { FreesampleComponent } from "../freesample/freesample.component";
+import { CarouselModule } from 'ngx-owl-carousel-o';
+import { RelatedproductComponent } from '../relatedproduct/relatedproduct.component';
+
+
 
 
 
@@ -183,7 +187,9 @@ interface FractionOption {
     MatIconModule,
     MatTooltipModule,
     HtmlTooltipDirective,
-    FreesampleComponent
+    FreesampleComponent,
+    CarouselModule,
+    RelatedproductComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -205,6 +211,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   private unitField?: ProductField;
   // Form / UI state
   public productTitle: string = '';
+  public related_products: any[] = [];
   isLoading = false;
   isSubmitting = false;
   errorMessage: string | null = null;
@@ -225,15 +232,19 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   pei_prospec: string = "";
   isScrolled = false;
   unittypename = "";
+  relatedframeimage:string = ""
   netpricecomesfrom = "";
   is3DOn = false;
   recipeid: number = 0;
+  category: number = 0;
   costpricecomesfrom = "";
   inchfractionselected: Number = 0;
   freesample: any;
+  relatedproducts: any;
   freesameple_status!: number | boolean;
   product_id!: number | string;
   freesample_price!: number | string;
+  siteurl = environment.site;
 
   get_freesample() {
     this.freesample = {
@@ -256,8 +267,16 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       "currencySymbol": this.currencySymbol
     }
   }
-
-
+  get_relatedproduct_data() {
+    this.relatedproducts = {
+      fabricid: this.fabricid,            
+      colorid: this.colorid || 0,         
+      routeParams: this.routeParams,      
+      fabricFieldType: this.fabricFieldType,  
+      siteurl: this.siteurl,              
+      product_id: this.product_id         
+    };
+  }
   inchfraction_array: FractionOption[] = [
     {
       "name": "1/32",
@@ -340,7 +359,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   previousFormValue: any;
   apiUrl = '';
   img_file_path_url = '';
-  // Data arrays
+  imgpath = environment.apiUrl+'/api/public/storage/attachments/'+environment.apiName+'/material/colour/';
+  frame_path = environment.apiUrl +'/api/public/storage/';
   parameters_data: ProductField[] = [];
   option_data: Record<number, ProductOption[]> = {};
   selected_option_data: SelectProductOption[] = [];
@@ -348,11 +368,40 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   routeParams: any;
   unittype: number = 1;
   pricegroup: string = "";
+  show_image_icons = false;
+  chosenAccessoriesFieldId:number = 0;
+  chosenAccessoriesOptionId:string = "";
   public grossPrice: string | null = null;
   public isCalculatingPrice = true;
   grossPricenum: number = 0;
   private priceUpdate = new Subject<void>();
   private rulesorderitem: any[] = [];
+  customOptions: any = {
+    loop: true,
+    mouseDrag: true,
+    touchDrag: true,
+    pullDrag: true,
+    margin: 20,
+    dots: false, 
+    navSpeed: 700,
+    navText: ['<', '>'],
+    responsive: {
+      0: {
+        items: 4
+      },
+      400: {
+        items: 4
+      },
+      740: {
+        items: 4
+      },
+      940: {
+        items: 4
+      }
+    },
+    nav: true
+  };
+
   constructor(
     private apiService: ApiService,
     private fb: FormBuilder,
@@ -430,7 +479,6 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
           }
         });
     }
-
     // Price updates remain the same
     this.priceUpdate.pipe(
       debounceTime(500),
@@ -478,7 +526,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       this.threeService.initialize(this.canvasRef, this.containerRef.nativeElement);
 
       if (productname.toLowerCase().includes('roller blinds')) {
-        this.threeService.loadGltfModel('assets/rollerblinds.gltf', 'rollerblinds');
+        this.threeService.loadGltfModel('assets/rollerblinds.glb', 'rollerblinds');
       } else if (
         productname.toLowerCase().includes('venetian') ||
         productname.toLowerCase().includes('fauxwood')
@@ -496,7 +544,6 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     setTimeout(() => this.onWindowResize(), 0);
   }
-
   toggle3D() {
     this.is3DOn = !this.is3DOn;
     this.setupVisualizer(this.productname);
@@ -516,7 +563,13 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       this.threeService.zoomIn();
     }
   }
+  openRoller() {
+    this.threeService.openRoller();
+  }
 
+  closeRoller() {
+    this.threeService.closeRoller();
+  }
   zoomOut(): void {
     if (this.is3DOn) {
       this.threeService.zoomOut();
@@ -558,21 +611,22 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
           this.productname = data.label;
           this.productdescription = data.pi_productdescription;
           this.pei_prospec = data.pei_prospec;
-          const category = Number(data.pi_category);
-          if (category == 5) {
+          this.category = Number(data.pi_category);
+          if (this.category == 5) {
             this.fabricFieldType = 21
-          } else if (category == 4) {
+          } else if (this.category == 4) {
             this.fabricFieldType = 20;
-          } else if (category == 3) {
+          } else if (this.category == 3) {
             this.fabricFieldType = 5;
           }
           this.recipeid = data.recipeid;
           this.freesameple_status = data?.pei_ecomFreeSample ?? 0;
           this.product_id = params?.product_id ?? this.route.snapshot.params['product_id'],
-            this.freesample_price = data?.pei_ecomsampleprice ?? 0;
+          this.freesample_price = data?.pei_ecomsampleprice ?? 0;
           this.get_freesample();
-
-          this.get_freesample();
+          this.relatedframeimage =  data?.pi_frameimage ?? "";
+         
+          console.log(this.relatedframeimage);
           let productBgImages: string[] = [];
           try {
             productBgImages = JSON.parse(data.pi_backgroundimage || '[]');
@@ -591,9 +645,32 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
             productDefaultImage = {};
             ecomProductName = "";
           }
+          let frameImages: string[] = [];
+          try {
+            frameImages = JSON.parse(data.pi_frameimage || '[]');
+          } catch (e) {
+            console.error('Error parsing pi_frameimage:', e);
+            frameImages = [];
+          }
 
           const defaultImageSettings = productDefaultImage?.defaultimage || {};
           const defaultFrameFilename = defaultImageSettings?.backgrounddefault || '';
+          const frameDefaultFilename = defaultImageSettings?.framedefault || '';
+          let frameFullUrl = '';
+          frameImages.forEach(imgPath => {
+            const isDefault = frameDefaultFilename && imgPath.includes(frameDefaultFilename);
+
+            const pathParts = imgPath.split('/');
+            const filename = pathParts.pop() || '';
+            const encodedFilename = encodeURIComponent(filename);
+            const encodedImgPath = [...pathParts, encodedFilename].join('/');
+
+            const fullUrl = this.img_file_path_url + encodedImgPath;
+
+            if (isDefault) {
+              this.relatedframeimage = fullUrl;
+            }
+          });
 
           this.product_img_array = productBgImages.map(imgFilename => {
             const isDefault = defaultFrameFilename && imgFilename.includes(defaultFrameFilename);
@@ -607,7 +684,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
               this.frame_default_url = imageUrl;
               this.mainframe = imageUrl;
             }
-
+            console.log(this.relatedframeimage);
             return { image_url: imageUrl, is_default: isDefault };
           });
 
@@ -628,6 +705,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
           this.parameters_data = response.data || [];
           this.apiUrl = params.api_url;
           this.routeParams = params;
+        this.chosenAccessoriesFieldId = this.routeParams.fabric_id;
+        this.chosenAccessoriesOptionId = this.routeParams.pricing_group;
           this.netpricecomesfrom = response.netpricecomesfrom;
           this.costpricecomesfrom = response.costpricecomesfrom;
           this.initializeFormControls();
@@ -638,7 +717,10 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
           this.dropField = this.parameters_data.find(f => [9, 10, 12, 32].includes(f.fieldtypeid));
           this.unitField = this.parameters_data.find(f => f.fieldtypeid === 34);
           this.get_freesample();
-
+		  this.show_image_icons = true;
+          if(2 == this.category){
+                this.show_image_icons = false;
+          }
           return forkJoin({
             optionData: this.loadOptionData(params),
             minMaxData: this.apiService.getminandmax(
@@ -874,7 +956,10 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
 
           if (control) {
             let valueToSet: any;
-
+            // Set option default in Accessories type on page load.
+            if('single_view' != this.routeParams?.fabric && 2 == this.category && this.chosenAccessoriesFieldId == field.fieldid){
+                field.optiondefault = this.chosenAccessoriesOptionId;
+            }
             if (field.fieldtypeid === 3 && field.selection == 1) {
               valueToSet = field.optiondefault
                 ? field.optiondefault.toString().split(',').filter((val: string) => val !== '').map(Number)
@@ -931,6 +1016,9 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         this.colorid = 0;
         this.updateMinMaxValidators(false);
       }
+      if(field.fieldtypeid === 5 ||  field.fieldtypeid === 20){
+        this.get_relatedproduct_data();
+      }
       this.updateFieldValues(field, null, 'valueChangedToEmpty');
       this.clearExistingSubfields(field.fieldid, field.allparentFieldId);
       this.get_freesample();
@@ -953,7 +1041,21 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         toArray(),
         takeUntil(this.destroy$)
       ).subscribe(() => {
-
+        // Accessories Type.
+        if('single_view' != this.routeParams?.fabric && 2 == this.category){
+            const selected_accessories_data = this.option_data[this.chosenAccessoriesFieldId];
+            if(selected_accessories_data.length > 0){
+                var chosen_accessories_list:any = [];
+                if(selected_accessories_data){
+                  chosen_accessories_list = selected_accessories_data.filter(opt => opt.optionid == this.chosenAccessoriesOptionId);
+                }
+                if(chosen_accessories_list[0].optionimage){
+                  this.threeService.updateTextures2d(this.apiUrl + '/api/public' + chosen_accessories_list[0].optionimage, ""); 
+                }else{
+                  this.threeService.updateTextures2d("assets/no-image.jpg", "");
+                }
+          }
+      }
         this.updateFieldValues(field, selectedOptions, 'Array.isArrayOptions');
         this.cd.markForCheck();
       });
@@ -982,6 +1084,21 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       if (canUpdate && (field.fieldtypeid === 3 && field.fieldname == "Frame Colour") && selectedOption.optionimage) {
 
         this.threeService.updateFrame(this.apiUrl + '/api/public' + selectedOption.optionimage);
+      }
+      // Accessories Type.
+     if('single_view' != this.routeParams?.fabric && 2 == this.category){
+            const selected_accessories_data = this.option_data[this.chosenAccessoriesFieldId];
+            if(selected_accessories_data.length > 0){
+                var chosen_accessories_list:any = [];
+                if(selected_accessories_data){
+                  chosen_accessories_list = selected_accessories_data.filter(opt => opt.optionid == this.chosenAccessoriesOptionId);
+                }
+                if(chosen_accessories_list[0].optionimage){
+                  this.threeService.updateTextures2d(this.apiUrl + '/api/public' + chosen_accessories_list[0].optionimage, ""); 
+                }else{
+                  this.threeService.updateTextures2d("assets/no-image.jpg", "");
+                }
+          }
       }
       this.processSelectedOption(params, field, selectedOption).pipe(
         takeUntil(this.destroy$)
@@ -1039,10 +1156,19 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         this.freesample = { ...this.freesample, fabricid: this.fabricid, color_id: this.colorid };
-
+        if(field.fieldtypeid === 5 ||  field.fieldtypeid === 20){
+           this.get_relatedproduct_data();
+        }
         this.cd.markForCheck();
       });
     }
+  }
+  buildVisualizerUrl(product: any) {
+    const slug1 = product.productname.toLowerCase().replace(/ /g, '-');
+    const slug2 = (product.fabricname + '-' + product.colorname)
+                    .toLowerCase().replace(/ /g, '-');
+
+    return `${this.siteurl}/visualizer/${this.product_id}/${slug1}/${slug2}/${product.fd_id}/${product.cd_id}/${product.groupid}/${product.supplierid}/${this.routeParams.cart_productid}`;
   }
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
@@ -1774,6 +1900,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         return of(null);
       })
     ).subscribe((FractionData: any) => {
+      console.log(FractionData);
       this.inchfractionselected = FractionData?.result?.inchfractionselected || 0;
       if (FractionData?.result?.inchfraction) {
         this.inchfraction_array = FractionData.result.inchfraction.map((item: any) => ({
@@ -1783,6 +1910,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
           frac_decimalvalue: item.decimalvalue
         }));
       } else {
+        this.showFractions = false;
         this.inchfraction_array = [];
       }
       this.updateAccordionData();
@@ -1829,7 +1957,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       this.vatname,
       window.location.href,
       this.productname,
-      this.routeParams.category,
+      this.fabricFieldType,
       visualizerImage,
     ).pipe(
       takeUntil(this.destroy$),
@@ -1905,8 +2033,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
             this.drop,
             this.unittype,
             this.supplier_id,
-            this.widthField.fieldtypeid,
-            this.dropField.fieldtypeid,
+            this.widthField?.fieldtypeid ?? "",
+            this.dropField?.fieldtypeid ?? "",
             this.pricegroup,
             vatPercentage,
             this.selected_option_data,
@@ -1928,8 +2056,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
             this.drop,
             this.unittype,
             this.supplier_id,
-            this.widthField.fieldtypeid,
-            this.dropField.fieldtypeid,
+            this.widthField?.fieldtypeid ?? "",
+            this.dropField?.fieldtypeid ?? "",
             this.pricegroup,
             vatPercentage,
             this.selected_option_data,
@@ -1983,8 +2111,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
                   this.drop,
                   this.unittype,
                   this.supplier_id,
-                  this.widthField.fieldtypeid,
-                  this.dropField.fieldtypeid,
+                  this.widthField?.fieldtypeid ?? "",
+                  this.dropField?.fieldtypeid ?? "",
                   this.pricegroup,
                   vatPercentage,
                   this.selected_option_data,
@@ -2011,8 +2139,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
             this.drop,
             this.unittype,
             this.supplier_id,
-            this.widthField.fieldtypeid,
-            this.dropField.fieldtypeid,
+            this.widthField?.fieldtypeid ?? "",
+            this.dropField?.fieldtypeid ?? "",
             this.pricegroup,
             vatPercentage,
             this.selected_option_data,
@@ -2206,5 +2334,22 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       i.subchild = this.cleanSubchild(i.subchild);
       return i;
     });
+  }	 
+getClassNameAccessories(field: any,list_field:boolean = false): string {
+    if('single_view' != this.routeParams?.fabric && list_field && 2 == this.category && field.fieldid == this.chosenAccessoriesFieldId){
+       return 'hide_section';
+    } 
+    if('single_view' != this.routeParams?.fabric && 2 == this.category && field.masterparentfieldid != this.chosenAccessoriesFieldId){
+      return 'hide_section';
+    }
+    return '';
   }
+  hideFrameImage():boolean{
+    if('single_view' != this.routeParams?.fabric && 2 == this.category){
+
+      return true;
+    }
+    return false;
+  }
+ 
 }

@@ -1,6 +1,5 @@
 :host {
-  --primary-color: #00c2ff;
-  --primary-hover: #00a8e0;
+  --primary-color-rgb: 0, 194, 255;
   --secondary-color: #6c757d;
   --secondary-hover: #5a6268;
   --light-gray: #f8f9fa;
@@ -152,7 +151,9 @@ textarea {
 .next {
     right: 0;
 }
-
+.mat-primary{
+    color:var(--primary-color);
+}
 .product-wrapper {
     flex: 1 1 45%;
     min-width: 300px;
@@ -724,12 +725,14 @@ button.mat-raised-button:hover {
 }
 
 ::ng-deep .mat-tab-label-active {
-  color: #00c2ff !important; /* Active tab text color */
+  color: var(--primary-color) !important; /* Active tab text color */
   font-weight: 500;
 }
-
+.tabsproduct {
+    color: #333;
+}
 ::ng-deep .mat-ink-bar {
-  background-color: #00c2ff !important; /* The underline color */
+  background-color: var(--primary-color) !important; /* The underline color */
 }
 .guides-card {
   text-align: center;
@@ -775,7 +778,7 @@ mat-button-toggle-group:disabled {
   transition: color 0.2s, transform 0.2s;
 }
 .info-icon:hover {
-  color: #00c2ff;
+  color: var(--primary-color);
   transform: scale(1.1);
 }
 
@@ -806,7 +809,13 @@ mat-button-toggle-group:disabled {
     top: 0;
     right: 10px;
     transform: translateY(-50%);
-    display: flex
-;
+    display: flex;
     flex-direction: column;
+}
+.hide_section {
+  display: none !important;
+}
+
+.multiple-frame-list-button {
+    cursor: pointer;
 }
