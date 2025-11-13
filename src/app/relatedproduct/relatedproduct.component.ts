@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../services/api.service';
 import { takeUntil } from 'rxjs/operators';
@@ -20,7 +20,7 @@ import { environment } from '../../environments/environment';
   templateUrl: './relatedproduct.component.html',
   styleUrls: ['./relatedproduct.component.css'],
 })
-export class RelatedproductComponent implements OnInit {
+export class RelatedproductComponent implements OnInit, OnChanges {
   @Input() relatedproducts: any;
 
   private destroy$ = new Subject<void>();
@@ -50,7 +50,7 @@ export class RelatedproductComponent implements OnInit {
       740: { items: 3 },
       940: { items: 5 }
     },
-    nav: true
+    nav: false
   };
 
   constructor(
@@ -59,8 +59,12 @@ export class RelatedproductComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    console.log(this.relatedproducts);
-    if (this.relatedproducts) {
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['relatedproducts'] && changes['relatedproducts'].currentValue) {
+      this.relatedframeimage = this.relatedproducts.relatedframeimage;
+      this.currencySymbol = this.relatedproducts.currencySymbol;
       this.getRelatedProducts();
     }
   }

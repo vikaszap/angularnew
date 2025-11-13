@@ -21,12 +21,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { HtmlTooltipDirective } from '../html-tooltip.directive';
 import { FreesampleComponent } from "../freesample/freesample.component";
+import { ConfiguratorComponent } from "../configurator/configurator.component";
 import { CarouselModule } from 'ngx-owl-carousel-o';
 import { RelatedproductComponent } from '../relatedproduct/relatedproduct.component';
-
-
-
-
 
 // Interfaces (kept as you had them)
 // Interfaces
@@ -188,6 +185,7 @@ interface FractionOption {
     MatTooltipModule,
     HtmlTooltipDirective,
     FreesampleComponent,
+    ConfiguratorComponent,
     CarouselModule,
     RelatedproductComponent
   ],
@@ -199,7 +197,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('zoomLens', { static: false }) private zoomLensRef!: ElementRef<HTMLElement>;
   @ViewChild('stickyEl', { static: false }) stickyEl!: ElementRef<HTMLElement>;
 
-
+  public isLooping: boolean = false;
   isZooming = false;
   mainframe!: string;
   background_color_image_url!: string;
@@ -220,6 +218,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   showFractions = false;
   product_details_arr: Record<string, string> = {};
   product_specs = '';
+  shutter_product_details :any;
   ecomproductname = '';
   product_description = '';
   unit_type_data: any[] = [];
@@ -232,6 +231,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   pei_prospec: string = "";
   isScrolled = false;
   unittypename = "";
+  hasProspecContent = false;
+hasDescriptionContent = false;
   relatedframeimage:string = ""
   netpricecomesfrom = "";
   is3DOn = false;
@@ -244,6 +245,14 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   freesameple_status!: number | boolean;
   product_id!: number | string;
   freesample_price!: number | string;
+  shutterdata:any;
+  colorurl: string="";
+  shutter_type_name:string="";
+  hinge_colorurl :  string ="";
+  midrails: string="";
+  no_of_panels: string="";
+  slatsize : string="";
+  tiltrod : string="";
   siteurl = environment.site;
 
   get_freesample() {
@@ -273,7 +282,9 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       colorid: this.colorid || 0,         
       routeParams: this.routeParams,      
       fabricFieldType: this.fabricFieldType,  
-      siteurl: this.siteurl,              
+      siteurl: this.siteurl,
+      relatedframeimage:this.relatedframeimage,
+      currencySymbol:this.currencySymbol,         
       product_id: this.product_id         
     };
   }
@@ -377,28 +388,15 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   private priceUpdate = new Subject<void>();
   private rulesorderitem: any[] = [];
   customOptions: any = {
-    loop: true,
+    loop: false,
     mouseDrag: true,
+    autoWidth: true,
     touchDrag: true,
     pullDrag: true,
     margin: 20,
     dots: false, 
     navSpeed: 700,
     navText: ['<', '>'],
-    responsive: {
-      0: {
-        items: 4
-      },
-      400: {
-        items: 4
-      },
-      740: {
-        items: 4
-      },
-      940: {
-        items: 4
-      }
-    },
     nav: true
   };
 
@@ -518,7 +516,30 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
     // We also need to ensure the animation loop in three.service is started.
     // A better place for this might be after the first textures are loaded.
   }
+  
+  onAnimate() {
+    this.threeService.toggleAnimate();
+  }
+  get isAnimateOpen(): boolean {
+    return this.threeService.isAnimateOpen;
+  }
+  onStopAnimate(): void {
+    this.threeService.stopAll();
+  }
+  onLoopAnimate(): void {
+   this.threeService.loopAnimate();
+  }
+  
+public onToggleLoopAnimate(): void {
 
+  if (this.isLooping) {
+    this.threeService.stopAll();
+    this.isLooping = false;
+  } else {
+    this.threeService.loopAnimate();
+    this.isLooping = true;
+  }
+}
   private setupVisualizer(productname: string): void {
     if (!this.canvasRef || !this.containerRef) return;
 
@@ -531,8 +552,12 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         productname.toLowerCase().includes('venetian') ||
         productname.toLowerCase().includes('fauxwood')
       ) {
-        this.threeService.loadGltfModel('assets/venetianblinds.gltf', 'venetian');
-      } else {
+        this.threeService.loadGltfModel('assets/venetianblinds.glb', 'venetian');
+      } else if(productname.toLowerCase().includes('vertical')) {
+          this.threeService.loadGltfModel('assets/verticalblinds.glb', 'vertical');
+      } else if(productname.toLowerCase().includes('wood')) {
+          this.threeService.loadGltfModel('assets/woodenblinds.glb', 'venetian');
+      }else {
         this.threeService.loadGltfModel('assets/rollerdoor.gltf', 'rollerdoor');
       }
 
@@ -563,12 +588,12 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       this.threeService.zoomIn();
     }
   }
-  openRoller() {
-    this.threeService.openRoller();
+  openAnimate() {
+    this.threeService.openAnimate();
   }
 
-  closeRoller() {
-    this.threeService.closeRoller();
+  closeAnimate() {
+    this.threeService.closeAnimate();
   }
   zoomOut(): void {
     if (this.is3DOn) {
@@ -607,10 +632,13 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       switchMap((productData: any) => {
         if (productData.result?.EcomProductlist?.length > 0) {
           const data: ProductDetails = productData.result.EcomProductlist[0];
+          this.shutter_product_details = productData.result.ShutterProductDetails;
           this.ecomproductname = data.pei_ecomProductName;
           this.productname = data.label;
           this.productdescription = data.pi_productdescription;
           this.pei_prospec = data.pei_prospec;
+          this.hasProspecContent = this.hasContent(this.pei_prospec);
+          this.hasDescriptionContent = this.hasContent(this.productdescription);
           this.category = Number(data.pi_category);
           if (this.category == 5) {
             this.fabricFieldType = 21
@@ -626,7 +654,6 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
           this.get_freesample();
           this.relatedframeimage =  data?.pi_frameimage ?? "";
          
-          console.log(this.relatedframeimage);
           let productBgImages: string[] = [];
           try {
             productBgImages = JSON.parse(data.pi_backgroundimage || '[]');
@@ -684,7 +711,6 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
               this.frame_default_url = imageUrl;
               this.mainframe = imageUrl;
             }
-            console.log(this.relatedframeimage);
             return { image_url: imageUrl, is_default: isDefault };
           });
 
@@ -1022,7 +1048,7 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
       this.updateFieldValues(field, null, 'valueChangedToEmpty');
       this.clearExistingSubfields(field.fieldid, field.allparentFieldId);
       this.get_freesample();
-
+      this.setShutterObject(field,null);
 
       return;
     }
@@ -1056,6 +1082,10 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
           }
       }
+        if(this.category == 5){
+          const chosenOptions = selectedOptions.length ? selectedOptions[selectedOptions.length - 1] : null;
+          this.setShutterObject(field,chosenOptions);
+        }
         this.updateFieldValues(field, selectedOptions, 'Array.isArrayOptions');
         this.cd.markForCheck();
       });
@@ -1158,6 +1188,9 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         this.freesample = { ...this.freesample, fabricid: this.fabricid, color_id: this.colorid };
         if(field.fieldtypeid === 5 ||  field.fieldtypeid === 20){
            this.get_relatedproduct_data();
+        }
+        if(this.category == 5){
+           this.setShutterObject(field,selectedOption);
         }
         this.cd.markForCheck();
       });
@@ -1900,7 +1933,6 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
         return of(null);
       })
     ).subscribe((FractionData: any) => {
-      console.log(FractionData);
       this.inchfractionselected = FractionData?.result?.inchfractionselected || 0;
       if (FractionData?.result?.inchfraction) {
         this.inchfraction_array = FractionData.result.inchfraction.map((item: any) => ({
@@ -2351,5 +2383,73 @@ getClassNameAccessories(field: any,list_field:boolean = false): string {
     }
     return false;
   }
- 
+
+  private getRelatedProducts(): void {
+
+    let relatedFabricId = this.fabricid;
+    let colorId = 0;
+
+    if (this.fabricFieldType === 5 || this.fabricFieldType === 20) {
+      colorId = this.colorid;
+    }
+
+    this.apiService.relatedProducts(this.routeParams, this.fabricFieldType , relatedFabricId, colorId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        if (response && response.result) {
+          this.related_products = response.result;
+        } else {
+          this.related_products = [];
+        }
+        this.cd.markForCheck();
+      });
+  }
+
+  private setShutterObject(field:any,selectedOption:any): any {
+    if(21 == field.fieldtypeid){
+      if (Array.isArray(this.shutter_product_details)) {
+          const shutter_type = this.shutter_product_details.find(
+            d => String(d.shuttertypeid) === String(field.optionid)
+          );
+          if(shutter_type?.shuttertypes && shutter_type?.shuttertypename){
+              this.shutter_type_name = shutter_type.shuttertypename;
+          }
+      }
+    }
+    const chosen_field_name = field.fieldname.replace(/\s+/g, '').toLowerCase();
+    // Color URL
+    if(('color' == chosen_field_name || 'colour' == chosen_field_name || 'colours' == chosen_field_name)){
+        this.colorurl = selectedOption ? this.apiUrl + '/api/public' + selectedOption?.optionimage:'assets/default-shutter-img.png';
+    }
+   // Hinge Color URL
+    if(('hingecolours' == chosen_field_name || 'hingecolour' == chosen_field_name || 'hingecolors' == chosen_field_name)){
+          this.hinge_colorurl = selectedOption ? this.apiUrl + '/api/public' + selectedOption?.optionimage:'';
+    }
+    // Midrails
+    if('midrails' == chosen_field_name){
+       this.midrails = field.value;
+    }
+    // Number of panels
+    if('noofpanel' == chosen_field_name){
+       this.no_of_panels = field.value;
+    }
+    // Slat size
+    if('slatsize' == chosen_field_name){
+       this.slatsize = field.value;
+    }
+    // Tilt rod
+    if('tiltrod' == chosen_field_name){
+       this.tiltrod = field.value;
+    }
+    
+    this.shutterdata = {
+      "colorurl"             : this.colorurl,
+      "shutter_type_name"    : this.shutter_type_name,
+      "hinge_colorurl"       : this.hinge_colorurl,
+      "no_of_panels"         : this.no_of_panels,
+      "midrails"             : this.midrails,
+      "slatsize"             : this.slatsize,
+      "tiltrod"              : this.tiltrod,
+    };
+  }
 }
