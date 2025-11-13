@@ -957,16 +957,21 @@ public updateTextures(backgroundUrl: string): void {
     }
 
     // Create new material while preserving original lighting properties
-    mesh.material = new THREE.MeshStandardMaterial({
-      map: texture,
-      // Preserve original material properties for proper lighting
-      roughness: originalMaterial?.roughness ?? 0.6,
-      metalness: originalMaterial?.metalness ?? 0.1,
-      side: THREE.DoubleSide,
-      color: originalMaterial?.color ?? new THREE.Color(0xffffff),
-      envMap: originalMaterial?.envMap,
-      envMapIntensity: originalMaterial?.envMapIntensity
-    });
+    if (this.isAnimateOpen) {
+      mesh.material = new THREE.MeshStandardMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        color: originalMaterial?.color ?? new THREE.Color(0xffffff),
+        envMap: originalMaterial?.envMap,
+        envMapIntensity: originalMaterial?.envMapIntensity
+      });
+    } else {
+      mesh.material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        color: originalMaterial?.color ?? new THREE.Color(0xffffff)
+      });
+    }
 
     (mesh.material as THREE.Material).needsUpdate = true;
 
