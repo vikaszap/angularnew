@@ -25,6 +25,8 @@ import { ConfiguratorComponent } from "../configurator/configurator.component";
 import { CarouselModule } from 'ngx-owl-carousel-o';
 import { RelatedproductComponent } from '../relatedproduct/relatedproduct.component';
 import { MatButtonToggleChange } from '@angular/material/button-toggle';
+import { DomSanitizer } from '@angular/platform-browser';
+import { MatIconRegistry } from '@angular/material/icon';
 
 // Interfaces (kept as you had them)
 // Interfaces
@@ -415,6 +417,8 @@ hasDescriptionContent = false;
     private cd: ChangeDetectorRef,
     private threeService: ThreeService,
     private http: HttpClient,
+    private matIconRegistry: MatIconRegistry,
+    private sanitizer: DomSanitizer
   ) {
     // initial minimal group; will be replaced in initializeFormControls
     this.orderForm = this.fb.group({
@@ -582,6 +586,7 @@ public onToggleLoopAnimate(): void {
     this.setupVisualizer(this.productname);
     if (this.is3DOn && this.background_color_image_url) {
       this.threeService.updateTextures(this.background_color_image_url);
+      this.registerProductIcon();
     }
     setTimeout(() => this.onWindowResize(), 0);
   }
@@ -643,6 +648,7 @@ public onToggleLoopAnimate(): void {
           this.shutter_product_details = productData.result.ShutterProductDetails;
           this.ecomproductname = data.pei_ecomProductName;
           this.productname = data.label;
+          this.productslug = this.productname.toLowerCase().replace(/ /g, '-');
           this.productdescription = data.pi_productdescription;
           this.pei_prospec = data.pei_prospec;
           this.hasProspecContent = this.hasContent(this.pei_prospec);
@@ -1057,11 +1063,8 @@ public onToggleLoopAnimate(): void {
       this.clearExistingSubfields(field.fieldid, field.allparentFieldId);
       this.get_freesample();
       this.setShutterObject(field,null);
-      if (this.is3DOn) {
-        this.threeService.updateTextures(this.background_color_image_url);
-      } else {
-        this.threeService.updateTextures2d(this.mainframe, this.background_color_image_url);
-      }
+      this.background_color_image_url = "";
+      this.setupVisualizer(this.productname);
       return;
     }
 
@@ -2508,6 +2511,21 @@ getClassNameAccessories(field: any,list_field:boolean = false): string {
         }
       }
     }
+  }
+  getIconPath() {
+    const state = this.isAnimateOpen ? 'up' : 'down';
+    return `assets/icons/${this.productslug}${state}.svg`;
+  }
+  registerProductIcon() {
+    const state = this.isAnimateOpen ? 'up' : 'down';
+    const path = `assets/icon/${this.productslug}-${state}.svg`;
+      const iconName = `${this.productslug}-${state}`;
+  console.log('REGISTERING ICON NAME →', iconName);
+  console.log('REGISTERING ICON PATH →', path);
+    this.matIconRegistry.addSvgIcon(
+      `${this.productslug}-${state}`,
+      this.sanitizer.bypassSecurityTrustResourceUrl(path)
+    );
   }
   accessoriesImageSelectedData(field:any,option:any,set_value = false){
     const control = this.orderForm.get(`field_${field.fieldid}`);

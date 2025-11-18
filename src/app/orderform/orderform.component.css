@@ -801,7 +801,10 @@ mat-button-toggle-group:disabled {
     cursor: not-allowed !important;
     opacity: 0.7 !important;
 }
-
+.product-icon {
+  width: 24px;
+  height: 24px;
+}
 .info-icon {
   color: #757575;
   font-size: 18px;
@@ -874,11 +877,6 @@ mat-button-toggle-group:disabled {
 .hide_section{
     display: none !important;
 }
-.product-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-}
-
 .related-products-container {
   margin-top: 20px;
 }

@@ -44,21 +44,24 @@
                   <button *ngIf="is3DOn" type="button" mat-icon-button (click)="zoomOut()" aria-label="Zoom out">
                     <mat-icon>zoom_out</mat-icon>
                   </button>
-                  <button *ngIf="is3DOn"
-                                  type="button"
-                                  mat-icon-button
-                                  (click)="onAnimate()"
-                                  aria-label="Toggle Roller">
-                            <mat-icon>
-                               {{ isAnimateOpen ? 'door_sliding' : 'door_front' }}
-                            </mat-icon>
-                          </button>
+                      <button *ngIf="is3DOn"
+                              type="button"
+                              mat-icon-button
+                              (click)="onAnimate()"
+                              aria-label="Toggle Roller">
+
+                        <mat-icon
+                           [svgIcon]="productslug + '-' + (isAnimateOpen ? 'up' : 'down')"
+                        class="product-icon">
+                      </mat-icon>
+
+                      </button>
                           <button *ngIf="is3DOn"
                                 type="button"
                                 mat-icon-button
                                 (click)="onToggleLoopAnimate()"
                                 aria-label="Toggle Loop Animation">
-                          <mat-icon color="primary">
+                          <mat-icon>
                             {{ isLooping ? 'stop' : 'play_arrow' }}
                           </mat-icon>
                         </button>
