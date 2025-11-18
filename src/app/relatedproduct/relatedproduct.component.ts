@@ -5,7 +5,6 @@ import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
-import { CarouselModule } from 'ngx-owl-carousel-o';
 import { environment } from '../../environments/environment';
 
 @Component({
@@ -14,8 +13,7 @@ import { environment } from '../../environments/environment';
   imports: [
     CommonModule,
     MatButtonToggleModule,
-    MatIconModule,
-    CarouselModule
+    MatIconModule
   ],
   templateUrl: './relatedproduct.component.html',
   styleUrls: ['./relatedproduct.component.css'],

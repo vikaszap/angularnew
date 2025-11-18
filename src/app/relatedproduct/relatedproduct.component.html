@@ -33,37 +33,7 @@
         </mat-button-toggle-group>
     </div>
     </div>
-  <owl-carousel-o *ngIf="!gridView" [options]="customOptions2">
-    <ng-template carouselSlide *ngFor="let product of related_products">
-      <a
-        [href]="buildVisualizerUrl(product)"
-        class="rp-link related-product-card"
-        target="_blank"
-      >
-        <div class="rp-image-box">
-        <img
-            [attr.data-img]="imgpath + product.colorimage"
-            [style.background-image]="showframe ? 'url(' + imgpath + product.colorimage + ')' : null"
-            [src]="showframe ? relatedframeimage : (imgpath + product.colorimage)"
-            alt="{{ product.productname }}"
-            (error)="onImageError($event)"
-          />
-        </div>
-
-        <div class="rp-info">
-          <p class="rp-name">
-            {{ product.productname }}
-            <span class="rp-fabric">{{ product.fabricname }}</span>
-            <span class="rp-color">{{ product.colorname }}</span>
-          </p>
-
-          <p class="rp-price" *ngIf="product.minprice">
-            From: {{currencySymbol}}{{ product.minprice }}
-          </p>
-        </div>
-      </a>
-    </ng-template>
-  </owl-carousel-o>
+  <!-- owl-carousel-o removed -->
   <div class="related-products-grid" *ngIf="gridView">
   <div class="related-product-card" *ngFor="let product of related_products">
     <a [href]="buildVisualizerUrl(product)" class="rp-link" target="_blank">
