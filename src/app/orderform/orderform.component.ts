@@ -1057,10 +1057,11 @@ public onToggleLoopAnimate(): void {
       this.clearExistingSubfields(field.fieldid, field.allparentFieldId);
       this.get_freesample();
       this.setShutterObject(field,null);
+      this.background_color_image_url = '';
       if (this.is3DOn) {
-        this.threeService.updateTextures(this.background_color_image_url);
+        this.threeService.updateTextures('');
       } else {
-        this.threeService.updateTextures2d(this.mainframe, this.background_color_image_url);
+        this.threeService.updateTextures2d(this.mainframe, '');
       }
       return;
     }

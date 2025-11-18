@@ -675,73 +675,112 @@ public loadGltfModel(
   }
 
   public updateTextures2d(frameUrl: string, backgroundUrl: string): void {
+    // --- MEMORY CLEANUP for 2D Meshes ---
+    if (this.frameMesh) {
+      if ((this.frameMesh.material as THREE.MeshBasicMaterial).map) {
+        (this.frameMesh.material as THREE.MeshBasicMaterial).map!.dispose();
+      }
+      this.frameMesh.geometry.dispose();
+      (this.frameMesh.material as THREE.Material).dispose();
+      this.scene.remove(this.frameMesh);
+    }
+
+    if (this.backgroundMesh) {
+      if ((this.backgroundMesh.material as THREE.MeshBasicMaterial).map) {
+        (this.backgroundMesh.material as THREE.MeshBasicMaterial).map!.dispose();
+      }
+      this.backgroundMesh.geometry.dispose();
+      (this.backgroundMesh.material as THREE.Material).dispose();
+      this.scene.remove(this.backgroundMesh);
+    }
+    // --- END MEMORY CLEANUP ---
+
+    // If both URLs are empty, we've just cleared the scene.
+    if (!frameUrl && !backgroundUrl) {
+      this.render();
+      return;
+    }
+
     const textureLoader = new THREE.TextureLoader();
 
-    textureLoader.load(frameUrl, (frameTexture) => {
-      frameTexture.colorSpace = THREE.SRGBColorSpace;
+    // Load Frame Texture (if provided)
+    if (frameUrl) {
+      textureLoader.load(frameUrl, (frameTexture) => {
+        frameTexture.colorSpace = THREE.SRGBColorSpace;
 
-      const imgWidth = frameTexture.image.width;
-      const imgHeight = frameTexture.image.height;
-      const aspect = imgWidth / imgHeight;
+        const imgWidth = frameTexture.image.width;
+        const imgHeight = frameTexture.image.height;
+        const aspect = imgWidth / imgHeight;
 
-      const canvas = this.renderer.domElement;
-      const canvasAspect = canvas.clientWidth / canvas.clientHeight;
+        const canvas = this.renderer.domElement;
+        const canvasAspect = canvas.clientWidth / canvas.clientHeight;
 
-      let viewWidth: number, viewHeight: number;
+        let viewWidth: number, viewHeight: number;
+        if (aspect > canvasAspect) {
+          viewWidth = canvas.clientWidth;
+          viewHeight = viewWidth / aspect;
+        } else {
+          viewHeight = canvas.clientHeight;
+          viewWidth = viewHeight * aspect;
+        }
 
-      if (aspect > canvasAspect) {
-        viewWidth = canvas.clientWidth;
-        viewHeight = viewWidth / aspect;
-      } else {
-        viewHeight = canvas.clientHeight;
-        viewWidth = viewHeight * aspect;
-      }
-
-      if (this.frameMesh) {
-        this.scene.remove(this.frameMesh);
-        this.frameMesh.geometry.dispose();
-        (this.frameMesh.material as THREE.Material).dispose();
-      }
-
-      const frameGeometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
-      const frameMaterial = new THREE.MeshBasicMaterial({
-        map: frameTexture,
-        transparent: true,
-        alphaTest: 0.1,
-        depthWrite: false
-      });
-      this.frameMesh = new THREE.Mesh(frameGeometry, frameMaterial);
-      this.frameMesh.position.z = 0;
-      this.scene.add(this.frameMesh);
-
-      if (backgroundUrl) {
-        textureLoader.load(backgroundUrl, (bgTexture) => {
-          bgTexture.colorSpace = THREE.SRGBColorSpace;
-
-          if (this.backgroundMesh) {
-            this.scene.remove(this.backgroundMesh);
-            this.backgroundMesh.geometry.dispose();
-            (this.backgroundMesh.material as THREE.Material).dispose();
-          }
-
-          const bgGeometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
-          const bgMaterial = new THREE.MeshBasicMaterial({
-            map: bgTexture,
-            transparent: false
-          });
-          this.backgroundMesh = new THREE.Mesh(bgGeometry, bgMaterial);
-          this.backgroundMesh.position.z = 0;
-          this.scene.add(this.backgroundMesh);
-
-          // Fit background into transparent area of frame texture (use new frameTexture)
-          this.fitBackgroundToFrame(frameTexture, this.frameMesh, this.backgroundMesh);
-
-          this.render();
+        const frameGeometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
+        const frameMaterial = new THREE.MeshBasicMaterial({
+          map: frameTexture,
+          transparent: true,
+          alphaTest: 0.1,
+          depthWrite: false,
         });
-      } else {
+        this.frameMesh = new THREE.Mesh(frameGeometry, frameMaterial);
+        this.frameMesh.position.z = 0;
+        this.scene.add(this.frameMesh);
+
+        // Load Background Texture (if provided) after the frame is loaded
+        if (backgroundUrl) {
+          textureLoader.load(backgroundUrl, (bgTexture) => {
+            bgTexture.colorSpace = THREE.SRGBColorSpace;
+
+            const bgGeometry = new THREE.PlaneGeometry(viewWidth, viewHeight); // Use same dimensions as frame
+            const bgMaterial = new THREE.MeshBasicMaterial({ map: bgTexture, transparent: false });
+            this.backgroundMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+            this.backgroundMesh.position.z = -1; // Place it behind the frame
+            this.scene.add(this.backgroundMesh);
+
+            this.fitBackgroundToFrame(frameTexture, this.frameMesh, this.backgroundMesh);
+            this.render();
+          });
+        } else {
+          this.render();
+        }
+      });
+    } else if (backgroundUrl) {
+      // Only a background is provided, no frame
+      textureLoader.load(backgroundUrl, (bgTexture) => {
+        bgTexture.colorSpace = THREE.SRGBColorSpace;
+        const imgWidth = bgTexture.image.width;
+        const imgHeight = bgTexture.image.height;
+        const aspect = imgWidth / imgHeight;
+
+        const canvas = this.renderer.domElement;
+        const canvasAspect = canvas.clientWidth / canvas.clientHeight;
+
+        let viewWidth: number, viewHeight: number;
+        if (aspect > canvasAspect) {
+          viewWidth = canvas.clientWidth;
+          viewHeight = viewWidth / aspect;
+        } else {
+          viewHeight = canvas.clientHeight;
+          viewWidth = viewHeight * aspect;
+        }
+
+        const bgGeometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
+        const bgMaterial = new THREE.MeshBasicMaterial({ map: bgTexture });
+        this.backgroundMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+        this.backgroundMesh.position.z = 0;
+        this.scene.add(this.backgroundMesh);
         this.render();
-      }
-    });
+      });
+    }
   }
 
   public onResize(container: HTMLElement): void {
@@ -799,7 +838,29 @@ public loadGltfModel(
   }
 
 public updateTextures(backgroundUrl: string): void {
-  if (!backgroundUrl) return;
+  // --- MEMORY CLEANUP ---
+  // Dispose of the old material and its texture before loading a new one
+  if (this.textureMaterial) {
+    if (this.textureMaterial.map) {
+      this.textureMaterial.map.dispose();
+    }
+    this.textureMaterial.dispose();
+    this.textureMaterial = undefined;
+  }
+
+  // If the URL is empty, we are just clearing the texture, so stop here.
+  if (!backgroundUrl) {
+    // Optionally, apply a default 'empty' material to the meshes
+    if (this.cube5Meshes.length > 0) {
+      const defaultMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc }); // A simple grey material
+      this.cube5Meshes.forEach(mesh => {
+        mesh.material = defaultMaterial;
+      });
+      this.render(); // Re-render the scene to show the change
+    }
+    return;
+  }
+  // --- END MEMORY CLEANUP ---
 
   // Force reload (bypass cache)
   const urlWithCacheBust = `${backgroundUrl}?t=${Date.now()}`;
