@@ -531,6 +531,7 @@ hasDescriptionContent = false;
   
   onAnimate() {
     this.threeService.toggleAnimate();
+    this.registerProductIcon();
   }
   get isAnimateOpen(): boolean {
     return this.threeService.isAnimateOpen;
@@ -586,8 +587,8 @@ public onToggleLoopAnimate(): void {
     this.setupVisualizer(this.productname);
     if (this.is3DOn && this.background_color_image_url) {
       this.threeService.updateTextures(this.background_color_image_url);
-      this.registerProductIcon();
     }
+     this.registerProductIcon();
     setTimeout(() => this.onWindowResize(), 0);
   }
   @HostListener('window:resize')
@@ -2512,20 +2513,17 @@ getClassNameAccessories(field: any,list_field:boolean = false): string {
       }
     }
   }
-  getIconPath() {
-    const state = this.isAnimateOpen ? 'up' : 'down';
-    return `assets/icons/${this.productslug}${state}.svg`;
-  }
   registerProductIcon() {
-    const state = this.isAnimateOpen ? 'up' : 'down';
-    const path = `assets/icon/${this.productslug}-${state}.svg`;
+    ['up', 'down'].forEach(state => {
       const iconName = `${this.productslug}-${state}`;
-  console.log('REGISTERING ICON NAME →', iconName);
-  console.log('REGISTERING ICON PATH →', path);
-    this.matIconRegistry.addSvgIcon(
-      `${this.productslug}-${state}`,
-      this.sanitizer.bypassSecurityTrustResourceUrl(path)
-    );
+      const path = `assets/icons/${iconName}.svg`;
+      console.log(iconName);
+      console.log(path);
+      this.matIconRegistry.addSvgIcon(
+        iconName,
+        this.sanitizer.bypassSecurityTrustResourceUrl(path)
+      );
+    });
   }
   accessoriesImageSelectedData(field:any,option:any,set_value = false){
     const control = this.orderForm.get(`field_${field.fieldid}`);

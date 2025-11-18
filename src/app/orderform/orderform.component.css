@@ -802,8 +802,7 @@ mat-button-toggle-group:disabled {
     opacity: 0.7 !important;
 }
 .product-icon {
-  width: 24px;
-  height: 24px;
+  transition: transform 0.3s ease;
 }
 .info-icon {
   color: #757575;
