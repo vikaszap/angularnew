@@ -22,7 +22,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { HtmlTooltipDirective } from '../html-tooltip.directive';
 import { FreesampleComponent } from "../freesample/freesample.component";
 import { ConfiguratorComponent } from "../configurator/configurator.component";
-import { CarouselModule } from 'ngx-owl-carousel-o';
 import { RelatedproductComponent } from '../relatedproduct/relatedproduct.component';
 import { MatButtonToggleChange } from '@angular/material/button-toggle';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -189,7 +188,6 @@ interface FractionOption {
     HtmlTooltipDirective,
     FreesampleComponent,
     ConfiguratorComponent,
-    CarouselModule,
     RelatedproductComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -2517,15 +2515,14 @@ getClassNameAccessories(field: any,list_field:boolean = false): string {
     return `assets/icons/${this.productslug}${state}.svg`;
   }
   registerProductIcon() {
-    const state = this.isAnimateOpen ? 'up' : 'down';
-    const path = `assets/icon/${this.productslug}-${state}.svg`;
+    ['up', 'down'].forEach(state => {
       const iconName = `${this.productslug}-${state}`;
-  console.log('REGISTERING ICON NAME →', iconName);
-  console.log('REGISTERING ICON PATH →', path);
-    this.matIconRegistry.addSvgIcon(
-      `${this.productslug}-${state}`,
-      this.sanitizer.bypassSecurityTrustResourceUrl(path)
-    );
+      const path = `assets/icon/${iconName}.svg`;
+      this.matIconRegistry.addSvgIcon(
+        iconName,
+        this.sanitizer.bypassSecurityTrustResourceUrl(path)
+      );
+    });
   }
   accessoriesImageSelectedData(field:any,option:any,set_value = false){
     const control = this.orderForm.get(`field_${field.fieldid}`);
