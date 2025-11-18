@@ -1093,3 +1093,13 @@ mat-button-toggle-group:disabled {
   position:absolute;
   top:-20px;
 }
+
+.configurator-preview-image {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .configurator-preview-image {
+    min-height: 480px;
+  }
+}
