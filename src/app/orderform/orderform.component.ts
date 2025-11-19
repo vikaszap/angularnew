@@ -368,6 +368,7 @@ hasDescriptionContent = false;
   v4_product_visualizer_page = '';
   fieldscategoryname = '';
   productslug = '';
+  iconname= "";
   fabricid = 0;
   colorid = 0;
   matmapid = 0;
@@ -650,6 +651,16 @@ public onToggleLoopAnimate(): void {
           this.ecomproductname = data.pei_ecomProductName;
           this.productname = data.label;
           this.productslug = this.productname.toLowerCase().replace(/ /g, '-');
+          if(this.productslug.toLowerCase().includes('roller')){
+            this.iconname ="roller-blinds";
+          }else if(this.productslug.toLowerCase().includes('vertical')){
+            this.iconname ="vertical-blinds";
+          }else if(this.productslug.toLowerCase().includes('venetian') || this.productslug.toLowerCase().includes('fauxwood')){
+            this.iconname ="venetian-blinds";
+          }else{
+            this.iconname ="roller-blinds";
+          }
+            
           this.productdescription = data.pi_productdescription;
           this.pei_prospec = data.pei_prospec;
           this.hasProspecContent = this.hasContent(this.pei_prospec);
@@ -1007,7 +1018,7 @@ public onToggleLoopAnimate(): void {
                 : [];
             } else if (field.fieldtypeid === 20) {
               valueToSet = +params.color_id || '';
-            } else if (field.fieldtypeid === 5) {
+            } else if (field.fieldtypeid === 5 || field.fieldtypeid === 21) {
               valueToSet = +params.fabric_id || '';
             } else {
               valueToSet = (field.optiondefault !== undefined && field.optiondefault !== null && field.optiondefault !== '')
@@ -2515,10 +2526,8 @@ getClassNameAccessories(field: any,list_field:boolean = false): string {
   }
   registerProductIcon() {
     ['up', 'down'].forEach(state => {
-      const iconName = `${this.productslug}-${state}`;
+      const iconName = `${this.iconname}-${state}`;
       const path = `assets/icons/${iconName}.svg`;
-      console.log(iconName);
-      console.log(path);
       this.matIconRegistry.addSvgIcon(
         iconName,
         this.sanitizer.bypassSecurityTrustResourceUrl(path)

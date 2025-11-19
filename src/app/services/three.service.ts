@@ -49,6 +49,7 @@ export class ThreeService implements OnDestroy {
   private rollerAction?: THREE.AnimationAction | null = null;
   private actions?: { [key: string]: THREE.AnimationAction };
   public isAnimateOpen: boolean = false;
+  public isLooping: boolean = false;
 
   public fitMode: 'contain' | 'cover' | 'stretch' = 'cover';
 
@@ -315,6 +316,13 @@ public loadGltfModel(
           this.rollerAction.loop = THREE.LoopOnce;
           this.rollerAction.clampWhenFinished = true;
           this.actions = undefined;
+          // Ensure closed pose at start: stop at time 0
+          this.rollerAction.stop();
+          this.rollerAction.enabled = true;
+          this.rollerAction.reset();
+          this.rollerAction.time = 0;
+          this.mixer.update(0);
+          this.rollerAction.stop();
         } else {
           this.actions = {};
           this.rollerAction = undefined;
@@ -325,11 +333,25 @@ public loadGltfModel(
             action.clampWhenFinished = true;
             this.actions![clip.name] = action;
           });
+
+          // Ensure all clips are at closed pose (time 0) and not playing
+          Object.values(this.actions).forEach(action => {
+            action.stop();
+            action.enabled = true;
+            action.reset();
+            action.time = 0;
+            this.mixer!.update(0);
+            action.stop();
+          });
         }
       } else {
         this.mixer = undefined;
         this.rollerAction = null;
       }
+
+      // Start with animations closed
+      this.isAnimateOpen = false;
+      this.isLooping = false;
 
       gltf.scene.traverse((child) => {
         if ((child as any).isMesh) {
@@ -401,6 +423,7 @@ public loadGltfModel(
           mesh.receiveShadow = true;
         });
       }
+     
       try {
         const bbox = new THREE.Box3().setFromObject(gltf.scene);
         const size = bbox.getSize(new THREE.Vector3());
@@ -435,7 +458,8 @@ public loadGltfModel(
       } catch (err) {
         console.warn('Auto-framing failed:', err);
       }
-      this.setRollerState(true);
+    
+      this.forceAllAnimationsClosed();
       if (this.textureMaterial && this.cube5Meshes.length > 0) {
         this.cube5Meshes.forEach((mesh) => {
           mesh.material = this.textureMaterial!;
@@ -451,7 +475,31 @@ public loadGltfModel(
     }
   );
 }
+  private forceAllAnimationsClosed(): void {
+  if (!this.mixer) return;
 
+  if (this.rollerAction) {
+    this.rollerAction.stop();
+    this.rollerAction.enabled = true;
+    this.rollerAction.reset();
+    this.rollerAction.time = 0;
+    this.mixer.update(0);
+    this.rollerAction.stop();
+    this.setRollerState(true);
+    return;
+  }
+
+  if (this.actions) {
+    Object.values(this.actions).forEach(action => {
+      action.stop();
+      action.enabled = true;
+      action.reset();
+      action.time = 0;
+    });
+
+    this.mixer.update(0);
+  }
+}
   public openAnimate(loopCount: number = 1): void {
     if (!this.mixer || this.isAnimateOpen) return;
 
@@ -472,7 +520,6 @@ public loadGltfModel(
     }
 
     this.isAnimateOpen = true;
-    this.updateButtonStates();
   }
 
   public closeAnimate(instant: boolean = false): void {
@@ -486,7 +533,7 @@ public loadGltfModel(
       action.enabled = true;
 
       if (instant) {
-        // Instantly jump to closed position (end frame)
+        // Instantly jump to closed position (start frame @ t=0)
         action.time = 0;
         this.mixer?.update(0);
         action.play();
@@ -509,11 +556,11 @@ public loadGltfModel(
     }
 
     this.isAnimateOpen = false;
-    this.updateButtonStates();
   }
 
   public toggleAnimate(loopCount: number = 1): void {
     if (!this.mixer) return;
+    if (this.isLooping) return; // disable toggle while looping
     console.log(this.isAnimateOpen);
     this.isAnimateOpen ? this.closeAnimate() : this.openAnimate(loopCount);
   }
@@ -541,15 +588,18 @@ public loadGltfModel(
     }
 
     this.isAnimateOpen = true;
-    this.updateButtonStates();
+    this.isLooping = true;
   }
 
   public stopAll(): void {
-    if (this.rollerAction) this.rollerAction.stop();
-
-    Object.values(this.actions ?? {}).forEach((a) => a.stop());
-    this.isAnimateOpen = false;
-    this.updateButtonStates();
+    if (this.rollerAction){
+      this.rollerAction.stop();
+      this.isAnimateOpen = true;
+    }else{
+      Object.values(this.actions ?? {}).forEach((a) => a.stop());
+      this.isAnimateOpen = false;
+    }
+    this.isLooping = false;
   }
 
   public getCanvasDataURL(): string | undefined {
@@ -560,20 +610,8 @@ public loadGltfModel(
     return this.renderer.domElement.toDataURL('image/png');
   }
 
-  private updateButtonStates(): void {
-    // If you have direct references to buttons
-    // if (this.openButton && this.closeButton) {
-    //   this.openButton.disabled = this.isAnimateOpen;
-    //   this.closeButton.disabled = !this.isAnimateOpen;
-    // }
-
-    // Or if you're using template references, emit events or use a service
-    console.log(`Roller is now ${this.isAnimateOpen ? 'OPEN' : 'CLOSED'}`);
-  }
-
   public setRollerState(isOpen: boolean): void {
     this.isAnimateOpen = isOpen;
-    this.updateButtonStates();
   }
 
   public initialize2d(canvas: ElementRef<HTMLCanvasElement>, container: HTMLElement): void {
