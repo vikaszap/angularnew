@@ -802,6 +802,13 @@ public loadGltfModel(
       this.camera2d.top = height / 2;
       this.camera2d.bottom = height / -2;
       this.camera2d.updateProjectionMatrix();
+
+      // Also update the zoom camera to match the new aspect ratio
+      this.zoomCamera.left = this.camera2d.left;
+      this.zoomCamera.right = this.camera2d.right;
+      this.zoomCamera.top = this.camera2d.top;
+      this.zoomCamera.bottom = this.camera2d.bottom;
+      this.zoomCamera.updateProjectionMatrix();
     }
 
     const resizeMesh = (mesh: THREE.Mesh | undefined) => {
@@ -829,10 +836,12 @@ public loadGltfModel(
       mesh.geometry.dispose();
       mesh.geometry = new THREE.PlaneGeometry(viewWidth, viewHeight);
     };
-    if (!this.camera2d) {
+
+    if (this.camera2d) {
       resizeMesh(this.frameMesh);
       resizeMesh(this.backgroundMesh);
     }
+
     this.render();
   }
 
