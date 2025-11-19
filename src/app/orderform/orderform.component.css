@@ -502,14 +502,31 @@ canvas {
 }
 
 #main-img {
+  position: relative;
+  width: 100%;
+  padding-top: 75%; /* 4:3 Aspect Ratio */
   overflow: visible;
 }
+
+@media (min-width: 768px) {
+  #main-img {
+    padding-top: 0;
+    height: 480px; /* fallback for browsers that don't support aspect-ratio */
+    aspect-ratio: 4 / 3;
+    max-height: 75vh;
+  }
+}
+
 #main-img.view3d {
   overflow: hidden;
 }
+
 #main-img canvas {
-  width: auto !important;
-  height: auto !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
   display: block;
 }
 .blindmatrix-v4-slider {
