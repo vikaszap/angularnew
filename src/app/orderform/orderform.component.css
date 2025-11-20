@@ -132,12 +132,13 @@ textarea {
 }
 
 .slider-container {
-    position: relative;
-    margin-top: 30px;
-    margin-bottom: 0;
-    padding-top: 8px;
-    padding-bottom: 0;
-    border-top: 1px solid var(--border-color);
+    position: absolute;
+    bottom: 10px;
+    background: #ffffffa1;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    border-radius: 10px;
 }
 
 .prev, .next {
@@ -478,7 +479,7 @@ textarea {
     padding-bottom: unset!important;
     background: var(--card-bg);
     border-radius: var(--border-radius);
-    padding: 25px 0;
+    margin: 25px 0;
 }
 
 .product_preview.zooming {
@@ -508,9 +509,18 @@ canvas {
   overflow: hidden;
 }
 #main-img canvas {
-  width: auto !important;
-  height: auto !important;
+  width: 100% !important;
+  height: 100% !important;
   display: block;
+}
+
+/* Responsive visualizer container */
+.configuratorpreviewimage {
+  position: relative;
+  height: 500px;
+}
+.configuratorpreviewimage.view3d{
+  height: 500px;
 }
 .blindmatrix-v4-slider {
   display: flex;
@@ -578,7 +588,7 @@ mat-button-toggle.mat-button-toggle-checked {
    font-size: 14px;
 }
 .frame-card  img{
-  padding: 6px;
+  padding: 2px;
   border-radius: 10px;
   cursor: pointer;
   margin: 10px 0;
@@ -591,12 +601,11 @@ mat-button-toggle.mat-button-toggle-checked {
 }
 .frame-card img {
   display: block;
-  height: 100px;
-  width: auto;
-  max-width: 150px;
   border-radius: 10px;
   object-fit: contain;
   transition: transform 0.25s ease;
+  height: auto;
+  width: 50px;
 }
 
 .frame-card.selected img{
@@ -701,12 +710,23 @@ mat-button-toggle.mat-button-toggle-checked {
         left: 50%;
         transform: translateX(-50%);
     }
+    /* 2D: no static height on mobile/tablet; computed from frame aspect */
+    .configuratorpreviewimage { height: auto; }
+    /* 3D: keep previous static height on mobile */
+    #main-img.view3d.configuratorpreviewimage { height: 55vh; }
 }
 
 @media (min-width: 768px) and (max-width: 991px) {
     .product-title span {
         font-size: 1.4rem;
     }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  /* 2D: avoid static height on tablet as well */
+  .configuratorpreviewimage { height: auto; }
+  /* 3D: keep original tablet height */
+  #main-img.view3d.configuratorpreviewimage { height: min(55vh, 560px); }
 }
 
 
@@ -1123,7 +1143,7 @@ mat-button-toggle-group:disabled {
 .show-order-details-contents tr {
   display: flex;
   align-items: center;
-  background: #ffffff;
+  background: var(--primary-color);
   margin: 2px 0;
   overflow: hidden;
   box-shadow: 0px 3px 10px rgba(0,0,0,0.08);
