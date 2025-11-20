@@ -401,17 +401,16 @@ hasDescriptionContent = false;
   private priceUpdate = new Subject<void>();
   private rulesorderitem: any[] = [];
   customOptions: any = {
-    loop: true,
-    mouseDrag: true,
-    autoWidth: false,
-    touchDrag: true,
-    pullDrag: true,
-    dots: false,
-    items: 3,
-    center: true,
-    navText: ['<', '>'],
-    nav: true
-  };
+      loop: true,
+      mouseDrag: true,
+      touchDrag: true,
+      autoWidth: true,
+      pullDrag: true,
+      dots: false,
+      navSpeed: 700,
+      navText: ['<', '>'],
+      nav: true
+    };
 
   constructor(
     private apiService: ApiService,
