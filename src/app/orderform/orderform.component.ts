@@ -400,18 +400,19 @@ hasDescriptionContent = false;
   grossPricenum: number = 0;
   private priceUpdate = new Subject<void>();
   private rulesorderitem: any[] = [];
+  public showFramesInMobile = false;
   customOptions: any = {
-      loop: true,
+      loop: false,
       mouseDrag: true,
       touchDrag: true,
-      autoWidth: true,
+      autoWidth: false,
       pullDrag: true,
       dots: false,
+      items:3,
       navSpeed: 700,
       navText: ['<', '>'],
-      nav: true
+      nav: false
     };
-
   constructor(
     private apiService: ApiService,
     private fb: FormBuilder,
@@ -538,6 +539,9 @@ hasDescriptionContent = false;
   get isAnimateOpen(): boolean {
     return this.threeService.isAnimateOpen;
   }
+  get hideAnimation(): boolean{
+    return this.threeService.hideAnimation;
+  }
   onStopAnimate(): void {
     this.threeService.stopAll();
   }
@@ -560,8 +564,9 @@ public onToggleLoopAnimate(): void {
 
     if (this.is3DOn) {
       this.threeService.initialize(this.canvasRef, this.containerRef.nativeElement);
-
-      if (productname.toLowerCase().includes('roller blinds')) {
+        if(productname.toLowerCase().includes('perfect fit roller')){
+            this.threeService.loadGltfModel('assets/perfectfitroller.glb', 'rollerblinds');
+        }else if (productname.toLowerCase().includes('roller blinds')) {
         this.threeService.loadGltfModel('assets/rollerblinds.glb', 'rollerblinds');
       } else if (
         productname.toLowerCase().includes('venetian') ||
@@ -1105,10 +1110,14 @@ public onToggleLoopAnimate(): void {
         this.fabricid = 0;
         this.colorid = 0;
         this.updateMinMaxValidators(false);
+        this.background_color_image_url = "";
+        this.setupVisualizer(this.productname);
       }
       if ((field.fieldtypeid === 5 && field.level == 2) || field.fieldtypeid === 20 || (field.fieldtypeid === 21 && field.level == 2)) {
         this.colorid = 0;
         this.updateMinMaxValidators(false);
+        this.background_color_image_url = "";
+        this.setupVisualizer(this.productname);
       }
       if(field.fieldtypeid === 5 ||  field.fieldtypeid === 20){
         this.get_relatedproduct_data();
@@ -1117,8 +1126,7 @@ public onToggleLoopAnimate(): void {
       this.clearExistingSubfields(field.fieldid, field.allparentFieldId);
       this.get_freesample();
       this.setShutterObject(field,null);
-      this.background_color_image_url = "";
-      this.setupVisualizer(this.productname);
+   
       return;
     }
 
@@ -1167,7 +1175,6 @@ public onToggleLoopAnimate(): void {
 
       if (canUpdate && (field.fieldtypeid === 5 && field.level == 2 || field.fieldtypeid === 20) && selectedOption.optionimage) {
         this.background_color_image_url = this.apiUrl + '/api/public' + selectedOption.optionimage;
-
         this.get_freesample();
         if (this.is3DOn) {
           this.threeService.updateTextures(this.background_color_image_url);
