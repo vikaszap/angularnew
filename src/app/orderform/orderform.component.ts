@@ -27,7 +27,6 @@ import { RelatedproductComponent } from '../relatedproduct/relatedproduct.compon
 import { MatButtonToggleChange } from '@angular/material/button-toggle';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
-import * as htmlToImage from 'html-to-image';
 
 // Interfaces (kept as you had them)
 // Interfaces
@@ -2717,17 +2716,6 @@ getClassNameAccessories(field: any,list_field:boolean = false): string {
   setShutterImage() {
     const element = document.getElementById('shutterspreview');
     if (!element) return;
-    htmlToImage.toPng(element, { pixelRatio: 2 })
-      .then((dataUrl: string) => {
-        const hiddenField = document.getElementById('previewImageField') as HTMLInputElement;
-        if (hiddenField) {
-          hiddenField.value = dataUrl;
-        }
-
-        console.log("Hidden field updated with image URL");
-      })
-      .catch(error => {
-        console.error("Image conversion failed", error);
-      });
+  
   }
 }
