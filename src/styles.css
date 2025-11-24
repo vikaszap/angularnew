@@ -2,7 +2,9 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: 'Poppins', sans-serif!important; }
-
+.mat-h1, .mat-headline, .mat-typography h1{
+    font-family: 'Poppins', sans-serif!important; 
+}
 .mat-input-element {
     caret-color: var(--primary-color) !important;
 }
@@ -14,6 +16,4 @@ body { margin: 0; font-family: 'Poppins', sans-serif!important; }
     color: blue!important;
     text-decoration: none;
 }
-.owl-item:first-child .frame-card{
-    margin-left:15px;
-}
+
