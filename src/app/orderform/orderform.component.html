@@ -81,6 +81,17 @@
                   </mat-button-toggle-group>
                 </div>
               </div>
+
+              <div class="environment-selector" *ngIf="is3DOn">
+                <div class="thumbnails">
+                  <div *ngFor="let env of environments"
+                       class="thumbnail"
+                       [class.selected]="env === selectedEnvironment"
+                       (click)="selectEnvironment(env)">
+                    <img [src]="env.image" [alt]="env.name">
+                  </div>
+                </div>
+              </div>
             </div>
            <div *ngIf="!is3DOn && category != 5 " class="slider-container">
               <owl-carousel-o [options]="customOptions">

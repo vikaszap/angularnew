@@ -1222,3 +1222,37 @@ mat-button-toggle-group:disabled {
   color:red;
   margin-left: 5px;
 }
+.environment-selector {
+  margin-top: 1rem;
+}
+
+.environment-selector h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.thumbnails {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.thumbnail {
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.thumbnail img {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbnail.selected {
+  border-color: #007bff;
+}
