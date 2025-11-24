@@ -202,13 +202,6 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('stickyEl', { static: false }) stickyEl!: ElementRef<HTMLElement>;
   @ViewChild('mainImg', { static: false }) private mainImgRef!: ElementRef<HTMLElement>;
 
-  public environments: { name: string; image: string }[] = [
-    { name: 'Living Room', image: 'assets/environments/living-room.jpg' },
-    { name: 'Bedroom', image: 'assets/environments/bedroom.jpg' },
-    { name: 'Office', image: 'assets/environments/office.jpg' },
-  ];
-  public selectedEnvironment: { name: string; image: string } | null = null;
-
   public isLooping: boolean = false;
   isZooming = false;
   mainframe!: string;
@@ -2383,16 +2376,6 @@ public onToggleLoopAnimate(): void {
   resetCamera(): void {
     if (this.is3DOn) {
       this.threeService.resetCamera();
-    }
-  }
-
-  selectEnvironment(environment: { name: string; image: string } | null): void {
-    if (this.selectedEnvironment === environment) {
-      this.selectedEnvironment = null;
-      this.threeService.setSceneBackground(null);
-    } else {
-      this.selectedEnvironment = environment;
-      this.threeService.setSceneBackground(environment ? environment.image : null);
     }
   }
 

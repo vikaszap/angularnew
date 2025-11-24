@@ -1099,29 +1099,6 @@ public updateTextures(backgroundUrl: string): void {
     }
   }
 
-  public setSceneBackground(imageUrl: string | null): void {
-    if (!this.scene) return;
-
-    if (!imageUrl) {
-      this.scene.background = new THREE.Color(0xeeeeee);
-      return;
-    }
-
-    this.textureLoader.load(
-      imageUrl,
-      (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        this.scene.background = texture;
-      },
-      undefined,
-      (error) => {
-        console.error('An error occurred loading the background texture:', error);
-        // Fallback to default color on error
-        this.scene.background = new THREE.Color(0xeeeeee);
-      }
-    );
-  }
-
   public animate(): void {
     const loop = () => {
       if (this.controls) {
