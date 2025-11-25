@@ -1,7 +1,10 @@
 import { Injectable, ElementRef, OnDestroy, NgZone } from '@angular/core';
 import * as THREE from 'three';
+import { BehaviorSubject } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import * as cv from '@techstark/opencv-js';
 
 @Injectable({
   providedIn: 'root'
@@ -69,6 +72,9 @@ export class ThreeService implements OnDestroy {
   private readonly zoomFactor = 12;
   private holeCache = new Map<string, { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number; found: boolean }>();
 
+  private cvInitialized = new BehaviorSubject<boolean>(false);
+  public cvInitialized$ = this.cvInitialized.asObservable();
+
   private animationFrameId?: number;
 
   // Added: lighting references (so they can be adjusted if needed)
@@ -76,7 +82,15 @@ export class ThreeService implements OnDestroy {
   private ambientLight?: THREE.AmbientLight;
   private fillLight?: THREE.PointLight;
 
-  constructor(private zone: NgZone) { }
+  constructor(private zone: NgZone) {
+    this.initOpenCV();
+  }
+  private initOpenCV(): void {
+    const cvModule = cv as any;
+    if (cvModule.onRuntimeInitialized) {
+      this.cvInitialized.next(true);
+    }
+  }
 
   ngOnDestroy(): void {
     this.resetState();
@@ -738,9 +752,6 @@ public loadGltfModel(
           this.backgroundMesh.castShadow = false;
           this.scene.add(this.backgroundMesh);
 
-          // Fit background into transparent area of frame texture
-          this.fitBackgroundToFrame(frameTexture, this.frameMesh, this.backgroundMesh);
-
           this.render();
         });
       } else {
@@ -808,9 +819,6 @@ public loadGltfModel(
           // ensure background stays behind the frame to avoid z-fighting
           this.backgroundMesh.position.z = -1;
           this.scene.add(this.backgroundMesh);
-
-          // Fit background into transparent area of frame texture (use new frameTexture)
-          this.fitBackgroundToFrame(frameTexture, this.frameMesh, this.backgroundMesh);
 
           this.render();
         });
@@ -1095,6 +1103,8 @@ public updateTextures(backgroundUrl: string): void {
     if (this.camera && this.controls) {
       this.camera.position.copy(this.initialCameraPosition);
       this.controls.target.copy(this.initialControlsTarget);
+      this.camera.projectionMatrix.copy(new THREE.PerspectiveCamera(75, this.renderer.domElement.width / this.renderer.domElement.height, 0.1, 1000).projectionMatrix);
+      this.controls.enabled = true;
       this.controls.update();
     }
   }
@@ -1183,119 +1193,127 @@ public updateTextures(backgroundUrl: string): void {
   }
 
   /**
-   * Detect transparent pixel bounding box in frame image
-   * Returns bounds in image pixel space: { minX, minY, maxX, maxY, width, height }
+   * Detects the largest rectangular contour in an image, assumed to be the "window".
+   * Returns an array of four corner points, or null if no suitable rectangle is found.
    */
-  private detectTransparentRegion(image: HTMLImageElement, alphaThreshold = 10) {
-    const cacheKey = (image as any).currentSrc || (image as any).src;
-    if (cacheKey && this.holeCache.has(cacheKey)) {
-      return this.holeCache.get(cacheKey)!;
-    }
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d")!;
-    canvas.width = image.width;
-    canvas.height = image.height;
-    ctx.drawImage(image, 0, 0);
+  private async detectWindowCoordinates(image: HTMLImageElement): Promise<{ x: number, y: number }[] | null> {
+    await this.cvInitialized$.pipe(
+      filter(initialized => initialized),
+      take(1)
+    ).toPromise();
 
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    try {
+      const src = cv.imread(image);
+      const gray = new cv.Mat();
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
 
-    // We want the bounding box of transparent pixels (hole)
-    let minX = canvas.width;
-    let minY = canvas.height;
-    let maxX = 0;
-    let maxY = 0;
-    let foundAny = false;
+      const binary = new cv.Mat();
+      cv.threshold(gray, binary, 1, 255, cv.THRESH_BINARY_INV);
 
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
-        const i = (y * canvas.width + x) * 4;
-        const alpha = imgData[i + 3];
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-        if (alpha < alphaThreshold) {
-          foundAny = true;
-          if (x < minX) minX = x;
-          if (y < minY) minY = y;
-          if (x > maxX) maxX = x;
-          if (y > maxY) maxY = y;
+      let largestRect = null;
+      let maxArea = 0;
+
+      for (let i = 0; i < contours.size(); ++i) {
+        const contour = contours.get(i);
+        const rect = cv.boundingRect(contour);
+        const area = rect.width * rect.height;
+
+        if (area > maxArea) {
+          maxArea = area;
+          largestRect = rect;
         }
+        contour.delete();
       }
-    }
 
-    let result: { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number; found: boolean };
-    if (!foundAny) {
-      // No transparent pixels found — return full image as fallback (empty hole)
-      result = { minX: 0, minY: 0, maxX: image.width, maxY: image.height, width: image.width, height: image.height, found: false };
-    } else {
-      result = { minX, minY, maxX, maxY, width: image.width, height: image.height, found: true };
+      src.delete();
+      gray.delete();
+      binary.delete();
+      contours.delete();
+      hierarchy.delete();
+
+      if (largestRect) {
+        return [
+          { x: largestRect.x, y: largestRect.y },
+          { x: largestRect.x + largestRect.width, y: largestRect.y },
+          { x: largestRect.x + largestRect.width, y: largestRect.y + largestRect.height },
+          { x: largestRect.x, y: largestRect.y + largestRect.height }
+        ];
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error during window detection:', error);
+      return null;
     }
-    if (cacheKey) this.holeCache.set(cacheKey, result);
-    return result;
   }
 
   /**
-   * Fit background mesh to the transparent hole inside the frame texture
+   * Sets the camera perspective to match the detected window corners.
    */
-  private fitBackgroundToFrame(frameTexture: THREE.Texture, frameMesh: THREE.Mesh, backgroundMesh: THREE.Mesh) {
-    const img = frameTexture.image as HTMLImageElement;
-    if (!img || !img.width || !img.height) {
-      return;
-    }
+  public setMagicWindowPerspective(corners: { x: number, y: number }[]): void {
+    if (!this.camera || !this.renderer) return;
 
-    // Detect transparent region in the image
-    const hole = this.detectTransparentRegion(img, 40);
-    if (!hole.found) {
-      // nothing transparent -> place background behind entire frame
-      // compute frame plane size:
-      if (frameMesh.geometry) frameMesh.geometry.computeBoundingBox();
-      const bbox = (frameMesh.geometry as any).boundingBox as THREE.Box3 | undefined;
-      if (bbox) {
-        const planeWidth = bbox.max.x - bbox.min.x;
-        const planeHeight = bbox.max.y - bbox.min.y;
-        // Replace background geometry to fit full plane
-        if (backgroundMesh.geometry) backgroundMesh.geometry.dispose();
-        backgroundMesh.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
-        backgroundMesh.position.set(frameMesh.position.x, frameMesh.position.y, frameMesh.position.z - 0.01);
+    const canvas = this.renderer.domElement;
+    const { clientWidth: width, clientHeight: height } = canvas;
+
+    // Convert pixel coordinates to normalized device coordinates (NDC)
+    const ndcCorners = corners.map(p => ({
+      x: (p.x / width) * 2 - 1,
+      y: -(p.y / height) * 2 + 1
+    }));
+
+    const near = this.camera.near;
+    const far = this.camera.far;
+
+    // Find the min/max NDC values to define the frustum boundaries
+    const left = Math.min(ndcCorners[0].x, ndcCorners[3].x);
+    const right = Math.max(ndcCorners[1].x, ndcCorners[2].x);
+    const top = Math.max(ndcCorners[0].y, ndcCorners[1].y);
+    const bottom = Math.min(ndcCorners[2].y, ndcCorners[3].y);
+
+    // Set the custom projection matrix
+    this.camera.projectionMatrix.makePerspective(left * near, right * near, top * near, bottom * near, near, far);
+    this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
+
+    // Disable controls to fix the view
+    if (this.controls) {
+      this.controls.enabled = false;
+    }
+  }
+
+  /**
+   * Updates the 3D view with a new background image and applies the Magic Window effect.
+   */
+  public updateMagicWindowBackground(imageUrl: string): void {
+    if (!this.scene) return;
+
+    const loader = new THREE.TextureLoader();
+    loader.load(imageUrl, async (texture) => {
+      if (!this.backgroundMesh) {
+        const geometry = new THREE.PlaneGeometry(2, 2); // Full-screen quad
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        this.backgroundMesh = new THREE.Mesh(geometry, material);
+        this.backgroundMesh.position.z = -1; // Behind the 3D model
+        this.scene.add(this.backgroundMesh);
+      } else {
+        (this.backgroundMesh.material as THREE.MeshBasicMaterial).map = texture;
       }
-      return;
-    }
 
-    // Get frame plane size in local coordinates
-    if (frameMesh.geometry) frameMesh.geometry.computeBoundingBox();
-    const bbox = (frameMesh.geometry as any).boundingBox as THREE.Box3 | undefined;
-    if (!bbox) return;
-
-    const planeWidth = bbox.max.x - bbox.min.x;
-    const planeHeight = bbox.max.y - bbox.min.y;
-
-    // Pixel dimensions of detected hole
-    const holePixelWidth = hole.maxX - hole.minX;
-    const holePixelHeight = hole.maxY - hole.minY;
-    const holeCenterX = (hole.minX + hole.maxX) / 2;
-    const holeCenterY = (hole.minY + hole.maxY) / 2;
-
-    // Map pixel sizes -> plane sizes
-    const innerWidth = planeWidth * (holePixelWidth / hole.width);
-    const innerHeight = planeHeight * (holePixelHeight / hole.height);
-
-    // Compute center offset in plane coords:
-    // image origin: top-left. plane origin: center (0,0) with Y up.
-    const offsetXFromCenterPx = holeCenterX - (hole.width / 2);
-    const offsetYFromCenterPx = (hole.height / 2) - holeCenterY; // invert Y
-
-    const offsetX = (offsetXFromCenterPx / hole.width) * planeWidth;
-    const offsetY = (offsetYFromCenterPx / hole.height) * planeHeight;
-
-    // Apply geometry/scale and position to background mesh
-    if (backgroundMesh.geometry) backgroundMesh.geometry.dispose();
-    backgroundMesh.geometry = new THREE.PlaneGeometry(innerWidth, innerHeight);
-
-    // Position background at computed center (relative to frameMesh)
-    backgroundMesh.position.set(
-      frameMesh.position.x + offsetX,
-      frameMesh.position.y + offsetY,
-      frameMesh.position.z - 0.01 // slightly behind to avoid z-fighting
-    );
-
-    backgroundMesh.updateMatrixWorld(true);
+      const corners = await this.detectWindowCoordinates(texture.image);
+      if (corners) {
+        this.setMagicWindowPerspective(corners);
+      } else {
+        // Fallback to default view if no window is detected
+        this.resetCamera();
+        if (this.controls) {
+          this.controls.enabled = true;
+        }
+      }
+      this.render();
+    });
   }
 }

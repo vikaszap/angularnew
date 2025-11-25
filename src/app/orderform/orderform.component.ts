@@ -608,6 +608,9 @@ public onToggleLoopAnimate(): void {
     } else {
       this.update2DContainerHeightFromFrame();
     }
+    if (this.is3DOn) {
+      this.onFrameChange(this.mainframe);
+    }
     setTimeout(() => this.onWindowResize(), 0);
   }
   @HostListener('window:resize')
@@ -694,23 +697,23 @@ public onToggleLoopAnimate(): void {
 
     this.apiService.getProductData(params).pipe(
       takeUntil(this.destroy$),
-      switchMap((productData: any) => {
+      tap((productData: any) => {
         if (productData.result?.EcomProductlist?.length > 0) {
           const data: ProductDetails = productData.result.EcomProductlist[0];
           this.shutter_product_details = productData.result.ShutterProductDetails;
           this.ecomproductname = data.pei_ecomProductName;
           this.productname = data.label;
           this.productslug = this.productname.toLowerCase().replace(/ /g, '-');
-          if(this.productslug.toLowerCase().includes('roller')){
-            this.iconname ="roller-blinds";
-          }else if(this.productslug.toLowerCase().includes('vertical')){
-            this.iconname ="vertical-blinds";
-          }else if(this.productslug.toLowerCase().includes('venetian') || this.productslug.toLowerCase().includes('fauxwood')){
-            this.iconname ="venetian-blinds";
-          }else{
-            this.iconname ="roller-blinds";
+          if (this.productslug.toLowerCase().includes('roller')) {
+            this.iconname = "roller-blinds";
+          } else if (this.productslug.toLowerCase().includes('vertical')) {
+            this.iconname = "vertical-blinds";
+          } else if (this.productslug.toLowerCase().includes('venetian') || this.productslug.toLowerCase().includes('fauxwood')) {
+            this.iconname = "venetian-blinds";
+          } else {
+            this.iconname = "roller-blinds";
           }
-            
+
           this.productdescription = data.pi_productdescription;
           this.pei_prospec = data.pei_prospec;
           this.hasProspecContent = this.hasContent(this.pei_prospec);
@@ -726,10 +729,10 @@ public onToggleLoopAnimate(): void {
           this.recipeid = data.recipeid;
           this.freesameple_status = data?.pei_ecomFreeSample ?? 0;
           this.product_id = params?.product_id ?? this.route.snapshot.params['product_id'],
-          this.freesample_price = data?.pei_ecomsampleprice ?? 0;
+            this.freesample_price = data?.pei_ecomsampleprice ?? 0;
           this.get_freesample();
-          this.relatedframeimage =  data?.pi_frameimage ?? "";
-         
+          this.relatedframeimage = data?.pi_frameimage ?? "";
+
           let productBgImages: string[] = [];
           try {
             productBgImages = JSON.parse(data.pi_backgroundimage || '[]');
@@ -799,7 +802,19 @@ public onToggleLoopAnimate(): void {
 
           this.setupVisualizer(ecomProductName);
         }
-        return this.apiService.getProductParameters(params, this.recipeid);
+      }),
+      switchMap(() => {
+        if (!this.recipeid) {
+          this.errorMessage = 'Recipe ID is missing, cannot fetch product parameters.';
+          return of(null);
+        }
+        return this.apiService.getProductParameters(params, this.recipeid).pipe(
+          catchError(err => {
+            console.error('Error fetching product parameters:', err);
+            this.errorMessage = 'Failed to load product parameters. Please try again.';
+            return of(null);
+          })
+        );
       }),
       switchMap((data: any) => {
         if (data && data[0]) {
@@ -807,8 +822,8 @@ public onToggleLoopAnimate(): void {
           this.parameters_data = response.data || [];
           this.apiUrl = params.api_url;
           this.routeParams = params;
-        this.chosenAccessoriesFieldId = this.routeParams.fabric_id;
-        this.chosenAccessoriesOptionId = this.routeParams.pricing_group;
+          this.chosenAccessoriesFieldId = this.routeParams.fabric_id;
+          this.chosenAccessoriesOptionId = this.routeParams.pricing_group;
           this.netpricecomesfrom = response.netpricecomesfrom;
           this.costpricecomesfrom = response.costpricecomesfrom;
           this.initializeFormControls();
@@ -819,9 +834,9 @@ public onToggleLoopAnimate(): void {
           this.dropField = this.parameters_data.find(f => [9, 10, 12, 32].includes(f.fieldtypeid));
           this.unitField = this.parameters_data.find(f => f.fieldtypeid === 34);
           this.get_freesample();
-		      this.show_image_icons = true;
-          if(2 == this.category){
-                this.show_image_icons = false;
+          this.show_image_icons = true;
+          if (2 == this.category) {
+            this.show_image_icons = false;
           }
           return forkJoin({
             optionData: this.loadOptionData(params),
@@ -1352,8 +1367,12 @@ public onToggleLoopAnimate(): void {
     });
 
     if (this.threeService) {
-      this.threeService.updateTextures2d(this.mainframe, this.background_color_image_url);
-      this.update2DContainerHeightFromFrame();
+      if (this.is3DOn) {
+        this.threeService.updateMagicWindowBackground(newFrameUrl);
+      } else {
+        this.threeService.updateTextures2d(this.mainframe, this.background_color_image_url);
+        this.update2DContainerHeightFromFrame();
+      }
     }
   }
   public getFrameImageUrl(product_img: any): string {
