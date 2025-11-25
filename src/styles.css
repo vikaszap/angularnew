@@ -17,3 +17,12 @@ body { margin: 0; font-family: 'Poppins', sans-serif!important; }
     text-decoration: none;
 }
 
+.mat-form-field, .mat-form-field * {
+    font-size: 14px !important;
+}
+.mat-label, .mat-form-field-label, .mat-input-element {
+    font-size: 14px !important;
+}
+.mat-button-toggle-label-content {
+    font-size: 14px;
+}

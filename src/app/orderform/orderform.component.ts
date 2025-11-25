@@ -12,9 +12,10 @@ import { ApiService } from '../services/api.service';
 import { ThreeService } from '../services/three.service';;
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2';
+import { FormControl } from '@angular/forms';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { Subject, forkJoin, Observable, of, from } from 'rxjs';
-import { switchMap, mergeMap, map, tap, catchError, takeUntil, finalize, toArray, concatMap, debounceTime } from 'rxjs/operators';
+import { switchMap, mergeMap, map, tap, catchError, takeUntil, finalize, toArray, concatMap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,6 +29,8 @@ import { MatButtonToggleChange } from '@angular/material/button-toggle';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
 import * as htmlToImage from 'html-to-image';
+import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
+
 
 // Interfaces (kept as you had them)
 // Interfaces
@@ -151,6 +154,8 @@ interface ProductOption {
   pricegroupid: string;
   optioncode?: string;
   optionquantity?: any;
+  unitcost?:any;
+  hasprice?:any;
   forchildfieldoptionlinkid?: string;
 }
 interface SelectProductOption {
@@ -191,7 +196,8 @@ interface FractionOption {
     FreesampleComponent,
     ConfiguratorComponent,
     CarouselModule,
-    RelatedproductComponent
+    RelatedproductComponent,
+    NgxMatSelectSearchModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -228,6 +234,8 @@ export class OrderformComponent implements OnInit, OnDestroy, AfterViewInit {
   product_description = '';
   unit_type_data: any[] = [];
   parameters_arr: any[] = [];
+  searchCtrl: { [key: number]: FormControl } = {};
+  filteredOptions: { [key: number]: any[] } = {};
   pricedata: any[] = [];
   supplierOption: any;
   priceGroupOption: any;
@@ -267,6 +275,7 @@ hasDescriptionContent = false;
   shutter_hinge_color_list_value:string="list";
   hinge_color_field_names:any[] = ['hingecolors','hingecolour','hingecolours'];
   color_field_names:any[] = ['colours','colour','color'];
+  enableSelectSearch: boolean = true;
 
   get_freesample() {
     this.freesample = {
@@ -471,27 +480,6 @@ hasDescriptionContent = false;
       });
 
 
-    } else {
-      // Production: get token from query param and call API
-      const token = queryParams['token'];
-      if (!token) {
-        console.error('Visualizer token is missing');
-        return;
-      }
-
-      const apiUrl = window.location.origin;
-
-      this.http.get(`${apiUrl}/wp-json/blindmatrix/v1/get_visualizer_data?token=${token}`)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (data: any) => {
-            this.img_file_path_url = data.api_url + '/api/public/';
-            this.fetchInitialData(data);
-          },
-          error: (err) => {
-            console.error('Invalid or expired visualizer token', err);
-          }
-        });
     }
     // Price updates remain the same
     this.priceUpdate.pipe(
@@ -939,6 +927,41 @@ public onToggleLoopAnimate(): void {
     ).subscribe(values => {
       this.onFormChanges(values, this.routeParams);
     });
+    this.parameters_data.forEach(field => {
+      const typeName = this.get_field_type_name(field.fieldtypeid);
+      if (["list", "materials"].includes(typeName)) {
+        const id = field.fieldid;
+
+        if (!this.searchCtrl[id]) {
+          this.searchCtrl[id] = new FormControl('');
+        }
+
+        if (!this.filteredOptions[id]) {
+          this.filteredOptions[id] = this.option_data[id] || [];
+        }
+
+        // Bind search to filter current option_data once it loads
+        this.searchCtrl[id].valueChanges
+          .pipe(
+            debounceTime(150),
+            map(v => (v || '').toString().toLowerCase().trim()),
+            distinctUntilChanged(),
+            takeUntil(this.destroy$)
+          )
+          .subscribe(term => {
+            const all = this.option_data[id] || [];
+            if (!this.enableSelectSearch) {
+              this.filteredOptions[id] = [...all];
+              this.cd.markForCheck();
+              return;
+            }
+            this.filteredOptions[id] = term === '' ? [...all] : all.filter(
+              opt => (opt?.optionname || '').toLowerCase().includes(term)
+            );
+            this.cd.markForCheck();
+          });
+      }
+    });
   }
 
   /**
@@ -1055,6 +1078,15 @@ public onToggleLoopAnimate(): void {
           }
 
           this.option_data[field.fieldid] = filteredOptions;
+          // Recompute filteredOptions using current search term (if any)
+          const existingSearch = this.enableSelectSearch
+            ? (this.searchCtrl[field.fieldid]?.value || '').toString().toLowerCase().trim()
+            : '';
+          const all = filteredOptions || [];
+          this.filteredOptions[field.fieldid] = existingSearch === ''
+            ? [...all]
+            : all.filter((opt: any) => (opt?.optionname || '').toLowerCase().includes(existingSearch));
+          this.cd.markForCheck();
           const control = this.orderForm.get(`field_${field.fieldid}`);
 
           if (control) {
@@ -1517,9 +1549,39 @@ public onToggleLoopAnimate(): void {
                 this.removeFieldSafely(subfield.fieldid);
                 return null;
               }
-
+                
               this.option_data[subfield.fieldid] = filteredOptions;
+              // Preserve existing search control when reloading same subfield; otherwise create
+              if (!this.searchCtrl[subfield.fieldid]) {
+                this.searchCtrl[subfield.fieldid] = new FormControl('');
+              }
+              const currentTerm = this.enableSelectSearch
+                ? (this.searchCtrl[subfield.fieldid].value || '').toString().toLowerCase().trim()
+                : '';
+              const allSub = this.option_data[subfield.fieldid] || [];
+              this.filteredOptions[subfield.fieldid] = currentTerm === ''
+                ? [...allSub]
+                : allSub.filter((opt: any) => (opt?.optionname || '').toLowerCase().includes(currentTerm));
 
+              this.searchCtrl[subfield.fieldid].valueChanges
+                .pipe(
+                  debounceTime(150),
+                  map(v => (v || '').toString().toLowerCase().trim()),
+                  distinctUntilChanged(),
+                  takeUntil(this.destroy$)
+                )
+                .subscribe(term => {
+                  const all = this.option_data[subfield.fieldid] || [];
+                  if (!this.enableSelectSearch) {
+                    this.filteredOptions[subfield.fieldid] = [...all];
+                    this.cd.markForCheck();
+                    return;
+                  }
+                  this.filteredOptions[subfield.fieldid] = term === '' ? [...all] : all.filter(opt =>
+                    (opt?.optionname || '').toLowerCase().includes(term)
+                  );
+                  this.cd.markForCheck();
+                });
               // set default value safely (without emitting)
               const control = this.orderForm.get(`field_${subfield.fieldid}`);
               if (control) {
@@ -2356,6 +2418,25 @@ public onToggleLoopAnimate(): void {
 
   trackByFieldId(index: number, field: ProductField): number {
     return field.fieldid;
+  }
+
+  trackByOptionId(index: number, opt: any): any {
+    return opt?.optionid ?? index;
+  }
+
+  // Public API: toggle search globally
+  setSearchEnabled(flag: boolean): void {
+    this.enableSelectSearch = !!flag;
+    // Reset current filters to full list and clear search terms without emitting
+    Object.keys(this.filteredOptions || {}).forEach(k => {
+      const id = Number(k);
+      const all = this.option_data?.[id] || [];
+      this.filteredOptions[id] = [...all];
+      if (this.searchCtrl?.[id]) {
+        this.searchCtrl[id].setValue('', { emitEvent: false });
+      }
+    });
+    this.cd.markForCheck();
   }
 
 
