@@ -46,7 +46,7 @@
     font-weight: 700;
     font-style: normal;
     color: var(--dark-gray);
-    font-size: 1.5rem;
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem); /* Responsive font size */
 }
 
 .visualizer-container {
@@ -523,10 +523,14 @@ canvas {
 /* Responsive visualizer container */
 .configuratorpreviewimage {
   position: relative;
-  height: 500px;
+  /* Let the JS calculate height based on aspect ratio for 2D views */
+  height: auto;
 }
 .configuratorpreviewimage.view3d{
-  height: 500px;
+  /* For 3D views, use a responsive height */
+  height: 65vh;
+  max-height: 550px; /* Cap the height on very tall screens */
+  min-height: 400px; /* Ensure a minimum height */
 }
 .blindmatrix-v4-slider {
   display: flex;
@@ -577,7 +581,7 @@ canvas {
 }
 
 .price {
-  font-size: 1.3rem;
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem); /* Responsive font size */
   font-weight: bold;
   color: #222;
 }
@@ -707,9 +711,7 @@ mat-button-toggle.mat-button-toggle-checked {
         margin-top: 10px;
     }
 
-    .product-title span {
-        font-size: 1.2rem;
-    }
+    /* Font size is now handled by clamp() */
     .price-label {
         padding: 1rem 0;
     }
@@ -736,23 +738,15 @@ mat-button-toggle.mat-button-toggle-checked {
         left: 50%;
         transform: translateX(-50%);
     }
-    /* 2D: no static height on mobile/tablet; computed from frame aspect */
-    .configuratorpreviewimage { height: auto; }
-    /* 3D: keep previous static height on mobile */
-    #main-img.view3d.configuratorpreviewimage { height: 55vh; }
+    /* The new base styles handle this automatically */
 }
 
 @media (min-width: 768px) and (max-width: 991px) {
-    .product-title span {
-        font-size: 1.4rem;
-    }
+    /* Font size is now handled by clamp() */
 }
 
 @media (min-width: 992px) and (max-width: 1199px) {
-  /* 2D: avoid static height on tablet as well */
-  .configuratorpreviewimage { height: auto; }
-  /* 3D: keep original tablet height */
-  #main-img.view3d.configuratorpreviewimage { height: min(55vh, 560px); }
+  /* The new base styles handle this automatically */
 }
 
 
@@ -1221,4 +1215,16 @@ mat-button-toggle-group:disabled {
 .required{
   color:red;
   margin-left: 5px;
+}
+@media (min-width: 992px) {
+  .blinds-measurement {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 1.5rem; /* Row gap 0, column gap 1.5rem */
+  }
+
+  /* Make sure some elements span both columns if needed */
+  .some-full-width-class {
+    grid-column: 1 / -1;
+  }
 }

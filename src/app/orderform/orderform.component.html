@@ -124,7 +124,6 @@
                   </mat-button-toggle-group>
              </div>
             <div class="blinds-measurement">
-            </div>
             <div *ngFor="let field of parameters_data; trackBy: trackByFieldId;let i = index"
               [ngSwitch]="get_field_type_name(field.fieldtypeid)">
               <div *ngIf="field.showfieldecomonjob == 1">
@@ -459,6 +458,7 @@
                 </div>
 
               </div>
+            </div>
             </div>
 
 
